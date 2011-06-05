@@ -1,0 +1,24 @@
+name: SimpleJail
+main: com.imjake9.simplejail.SimpleJail
+version: 0.1
+author: imjake9
+
+commands:
+  jail:
+    description: Places a player in Jail.
+    usage: |
+           /<command> <player>
+  unjail:
+    description: Removes a player from Jail.
+    usage: |
+           /<command> <player>
+  setjail:
+    description: Sets the Jail point.
+    usage: |
+           /<command>
+           /<command> <x> <y> <z>
+  setunjail:
+    description: Sets the Jail removal point.
+    usage: |
+           /<command>
+           /<command> <x> <y> <z>
