@@ -129,6 +129,7 @@ public class SimpleJail extends JavaPlugin {
             perms.setProperty("users." + args[0] + ".group", jailed.getString(args[0]));
             jailed.removeProperty(args[0]);
         } else {
+            if(jailed.getProperty(args[0]) instanceof String) this.convertPermission(args[0]);
             List groupList = jailed.getList(args[0]);
             if(groupList == null) groupList = new ArrayList();
             perms.setProperty("users." + args[0] + ".groups", groupList);
@@ -244,6 +245,13 @@ public class SimpleJail extends JavaPlugin {
         
         perms = new Configuration(f);
         perms.load();
+    }
+    
+    public void convertPermission(String key) {
+        List groupList = new ArrayList();
+        groupList.add(key);
+        jailed.removeProperty(key);
+        jailed.setProperty(key, groupList);
     }
     
 }
