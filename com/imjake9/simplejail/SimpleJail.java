@@ -4,8 +4,9 @@ import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -26,6 +27,7 @@ public class SimpleJail extends JavaPlugin {
     private String jailGroup;
     private Configuration perms;
     private Configuration jailed;
+    private boolean newPerms = false;
     
     @Override
     @SuppressWarnings("LoggerStringConcat")
@@ -80,6 +82,7 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void jailPlayer(CommandSender sender, String[] args) {
+        args[0] = args[0].toLowerCase();
         Player player = this.getServer().getPlayer(args[0]);
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
@@ -90,8 +93,19 @@ public class SimpleJail extends JavaPlugin {
             return;
         }
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
-        jailed.setProperty(args[0], perms.getString("users." + args[0] + ".group"));
-        perms.setProperty("users." + args[0] + ".group", jailGroup);
+        
+        if(!newPerms) {
+            jailed.setProperty(args[0], perms.getString("users." + args[0] + ".group"));
+            perms.setProperty("users." + args[0] + ".group", jailGroup);
+        } else {
+            List groupList = perms.getList("users." + args[0] + ".groups");
+            if(groupList == null) groupList = new ArrayList();
+            jailed.setProperty(args[0], groupList);
+            List jailList = new ArrayList();
+            jailList.add(jailGroup);
+            perms.setProperty("users." + args[0] + ".groups", jailList);
+        }
+        
         jailed.save();
         perms.save();
         this.getServer().dispatchCommand(((CraftServer)getServer()).getServer().console, "permissions -reload all");
@@ -99,6 +113,7 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void unjailPlayer(CommandSender sender, String[] args) {
+        args[0] = args[0].toLowerCase();
         Player player = this.getServer().getPlayer(args[0]);
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
@@ -109,8 +124,17 @@ public class SimpleJail extends JavaPlugin {
             return;
         }
         player.teleport(new Location(player.getWorld(), unjailCoords[0], unjailCoords[1], unjailCoords[2]));
-        perms.setProperty("users." + args[0] + ".group", jailed.getString(args[0]));
-        jailed.removeProperty(args[0]);
+        
+        if(!newPerms) {
+            perms.setProperty("users." + args[0] + ".group", jailed.getString(args[0]));
+            jailed.removeProperty(args[0]);
+        } else {
+            List groupList = jailed.getList(args[0]);
+            if(groupList == null) groupList = new ArrayList();
+            perms.setProperty("users." + args[0] + ".groups", groupList);
+            jailed.removeProperty(args[0]);
+        }        
+        
         jailed.save();
         perms.save();
         this.getServer().dispatchCommand(((CraftServer)getServer()).getServer().console, "permissions -reload all");
@@ -140,8 +164,8 @@ public class SimpleJail extends JavaPlugin {
         
         Configuration config = this.getConfiguration();
         config.setProperty("jail.x", jailCoords[0]);
-        config.setProperty("jail.x", jailCoords[1]);
-        config.setProperty("jail.x", jailCoords[2]);
+        config.setProperty("jail.y", jailCoords[1]);
+        config.setProperty("jail.z", jailCoords[2]);
         config.save();
         sender.sendMessage(ChatColor.AQUA + "Jail point saved.");
     }
@@ -169,8 +193,8 @@ public class SimpleJail extends JavaPlugin {
         
         Configuration config = this.getConfiguration();
         config.setProperty("unjail.x", unjailCoords[0]);
-        config.setProperty("unjail.x", unjailCoords[1]);
-        config.setProperty("unjail.x", unjailCoords[2]);
+        config.setProperty("unjail.y", unjailCoords[1]);
+        config.setProperty("unjail.z", unjailCoords[2]);
         config.save();
         sender.sendMessage(ChatColor.AQUA + "Unjail point saved.");
     }
@@ -207,9 +231,10 @@ public class SimpleJail extends JavaPlugin {
            }
         }
         
-        File f = new File(((Permissions)plugin).directory.getPath() + File.separator + this.getServer().getWorlds().get(0).getName() + ".yml");
+        File f = new File(this.getFile().getParent() + File.separator + "Permissions" + File.separator + this.getServer().getWorlds().get(0).getName() + ".yml");
         if(!f.exists()) {
-            f = new File(((Permissions)plugin).directory.getPath() + File.separator + this.getServer().getWorlds().get(0).getName() + File.separator + "users.yml");
+            f = new File(this.getFile().getParent() + File.separator + "Permissions" + File.separator + this.getServer().getWorlds().get(0).getName() + File.separator + "users.yml");
+            this.newPerms = true;
         }
         if(!f.exists()) {
             log.info("[SimpleJail] ERROR: Permissions file not found.");
