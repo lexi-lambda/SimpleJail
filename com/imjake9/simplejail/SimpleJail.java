@@ -5,6 +5,7 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -95,10 +96,12 @@ public class SimpleJail extends JavaPlugin {
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
         
         if(!newPerms) {
-            jailed.setProperty(args[0], perms.getString("users." + args[0] + ".group"));
+            String groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
+            jailed.setProperty(args[0], groupName);
             perms.setProperty("users." + args[0] + ".group", jailGroup);
         } else {
-            List groupList = perms.getList("users." + args[0] + ".groups");
+            String[] groupName = permissions.getGroups(this.getServer().getWorlds().get(0).getName(), args[0]);
+            List groupList = Arrays.asList(groupName);
             if(groupList == null) groupList = new ArrayList();
             jailed.setProperty(args[0], groupList);
             List jailList = new ArrayList();
