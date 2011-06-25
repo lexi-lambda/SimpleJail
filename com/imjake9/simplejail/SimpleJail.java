@@ -15,6 +15,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
@@ -29,6 +31,7 @@ public class SimpleJail extends JavaPlugin {
     private Configuration perms;
     private Configuration jailed;
     private boolean newPerms = false;
+    private SimpleJailPlayerListener listener;
     
     @Override
     @SuppressWarnings("LoggerStringConcat")
@@ -41,6 +44,9 @@ public class SimpleJail extends JavaPlugin {
     public void onEnable() {
         this.loadConfig();
         this.setupPermissions();
+        
+        listener = new SimpleJailPlayerListener(this);
+        this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
         
         log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() + " enabled.");
     }
@@ -255,6 +261,16 @@ public class SimpleJail extends JavaPlugin {
         groupList.add(key);
         jailed.removeProperty(key);
         jailed.setProperty(key, groupList);
+    }
+    
+    public Location getJailLocation(Player player) {
+        return new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]);
+    }
+    
+    public boolean playerIsJailed(Player player) {
+        if (jailed.getProperty(player.getName().toLowerCase()) != null)
+            return true;
+        return false;
     }
     
 }
