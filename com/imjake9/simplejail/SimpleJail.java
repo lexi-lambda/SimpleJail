@@ -89,12 +89,19 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void jailPlayer(CommandSender sender, String[] args) {
-        args[0] = args[0].toLowerCase();
         Player player = this.getServer().getPlayer(args[0]);
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
             return;
         }
+        args[0] = player.getName();
+        
+        //Compatibility code:
+        if(!(args[0].equals(args[0].toLowerCase())) && jailed.getProperty(args[0].toLowerCase()) != null) {
+            jailed.setProperty(args[0], args[0].toLowerCase());
+            jailed.removeProperty(args[0].toLowerCase());
+        }
+        
         if(jailed.getProperty(args[0]) != null) {
             sender.sendMessage(ChatColor.RED + "That player is already in jail!");
             return;
@@ -122,12 +129,19 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void unjailPlayer(CommandSender sender, String[] args) {
-        args[0] = args[0].toLowerCase();
         Player player = this.getServer().getPlayer(args[0]);
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
             return;
         }
+        args[0] = player.getName();
+        
+        //Compatibility code:
+        if(!(args[0].equals(args[0].toLowerCase())) && jailed.getProperty(args[0].toLowerCase()) != null) {
+            jailed.setProperty(args[0], args[0].toLowerCase());
+            jailed.removeProperty(args[0].toLowerCase());
+        }
+        
         if(jailed.getProperty(args[0]) == null) {
             sender.sendMessage(ChatColor.RED + "That player is not in jail!");
             return;
