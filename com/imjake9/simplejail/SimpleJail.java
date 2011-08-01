@@ -2,6 +2,7 @@ package com.imjake9.simplejail;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
+import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +51,7 @@ public class SimpleJail extends JavaPlugin {
         console = ((CraftServer)this.getServer()).getServer().console;
         this.loadConfig();
         if(!useBukkitPermissions) this.setupPermissions();
-        else bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("Permissions");
+        else bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
         
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
@@ -63,33 +64,33 @@ public class SimpleJail extends JavaPlugin {
         
         if(commandLabel.equalsIgnoreCase("jail") && args.length == 1) {
             if(sender instanceof Player) {
-                if(!permissions.has((Player)sender, "SimpleJail.jail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.jail")) return true;
             }
             this.jailPlayer(sender, args);
             return true;
         } else if(commandLabel.equalsIgnoreCase("unjail") && args.length == 1) {
             if(sender instanceof Player) {
-                if(!permissions.has((Player)sender, "SimpleJail.unjail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.unjail")) return true;
             }
             this.unjailPlayer(sender, args);
             return true;
         } else if(commandLabel.equalsIgnoreCase("setjail") && (args.length == 0 || args.length == 3)) {
             if(sender instanceof Player) {
-                if(!permissions.has((Player)sender, "SimpleJail.setjail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.setjail")) return true;
             }
             this.setJail(sender, args);
             return true;
         } else if(commandLabel.equalsIgnoreCase("setunjail") && (args.length == 0 || args.length == 3)) {
             if(sender instanceof Player) {
-                if(!permissions.has((Player)sender, "SimpleJail.setjail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.setjail")) return true;
             }
             this.setUnjail(sender, args);
             return true;
         } else {
             if(sender instanceof Player) {
-                if(!permissions.has((Player)sender, "SimpleJail.jail")) return true;
-                if(!permissions.has((Player)sender, "SimpleJail.unjail")) return true;
-                if(!permissions.has((Player)sender, "SimpleJail.setjail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.jail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.unjail")) return true;
+                if(!hasPermission((Player)sender, "SimpleJail.setjail")) return true;
             }
             return false;
         }
@@ -118,7 +119,11 @@ public class SimpleJail extends JavaPlugin {
         if (useBukkitPermissions || !newPerms) {
             Object groupName;
             if(useBukkitPermissions) {
-                groupName = bukkitPermissions.getGroups(player.getName());
+                List groups = bukkitPermissions.getGroups(player.getName());
+                groupName = new ArrayList();
+                for(Object g : groups) {
+                    ((ArrayList)groupName).add(((Group)g).getName());
+                }
             } else {
                 groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
             }
@@ -137,8 +142,8 @@ public class SimpleJail extends JavaPlugin {
         }
         
         jailed.save();
-        perms.save();
-        this.getServer().dispatchCommand(((CraftServer)getServer()).getServer().console, "permissions -reload all");
+        if(!useBukkitPermissions) perms.save();
+        if(!useBukkitPermissions) this.getServer().dispatchCommand(console, "permissions -reload all");
         sender.sendMessage(ChatColor.AQUA + "Player sent to jail.");
     }
     
@@ -178,8 +183,8 @@ public class SimpleJail extends JavaPlugin {
         jailed.removeProperty(args[0]);
         
         jailed.save();
-        perms.save();
-        this.getServer().dispatchCommand(((CraftServer)getServer()).getServer().console, "permissions -reload all");
+        if(!useBukkitPermissions) perms.save();
+        if(!useBukkitPermissions) this.getServer().dispatchCommand(((CraftServer)getServer()).getServer().console, "permissions -reload all");
         sender.sendMessage(ChatColor.AQUA + "Player removed from jail.");
     }
     
@@ -250,7 +255,7 @@ public class SimpleJail extends JavaPlugin {
         unjailCoords[1] = config.getInt("unjail.y", 0);
         unjailCoords[2] = config.getInt("unjail.z", 0);
         jailGroup = config.getString("jailgroup", "Jailed");
-        useBukkitPermissions = config.getBoolean("usebukkitpermissions", config.getProperty("jailGroup") == null);
+        useBukkitPermissions = config.getBoolean("usebukkitpermissions", config.getProperty("jailgroup") == null);
         config.save();
         
         File f = new File(this.getDataFolder().getPath() + File.separator + "jailed.yml");
