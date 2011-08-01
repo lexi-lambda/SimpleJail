@@ -14,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.craftbukkit.command.ColouredConsoleSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
@@ -24,6 +25,7 @@ import org.bukkit.util.config.Configuration;
 public class SimpleJail extends JavaPlugin {
     
     private static final Logger log = Logger.getLogger("Minecraft");
+    private final ColouredConsoleSender console = ((CraftServer)this.getServer()).getServer().console;
     public static PermissionHandler permissions;
     private int[] jailCoords = new int[3];
     private int[] unjailCoords = new int[3];
@@ -32,6 +34,7 @@ public class SimpleJail extends JavaPlugin {
     private Configuration jailed;
     private boolean newPerms = false;
     private SimpleJailPlayerListener listener;
+    public boolean useBukkitPermissions = true;
     
     @Override
     @SuppressWarnings("LoggerStringConcat")
@@ -43,7 +46,7 @@ public class SimpleJail extends JavaPlugin {
     @SuppressWarnings("LoggerStringConcat")
     public void onEnable() {
         this.loadConfig();
-        this.setupPermissions();
+        if(!useBukkitPermissions) this.setupPermissions();
         
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
@@ -108,18 +111,20 @@ public class SimpleJail extends JavaPlugin {
         }
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
         
-        if(!newPerms) {
+        if (useBukkitPermissions || !newPerms) {
             String groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
             jailed.setProperty(args[0], groupName);
-            perms.setProperty("users." + args[0] + ".group", jailGroup);
+            this.setGroup(player, jailGroup);
         } else {
             String[] groupName = permissions.getGroups(this.getServer().getWorlds().get(0).getName(), args[0]);
             List groupList = Arrays.asList(groupName);
-            if(groupList == null) groupList = new ArrayList();
+            if (groupList == null) {
+                groupList = new ArrayList();
+            }
             jailed.setProperty(args[0], groupList);
             List jailList = new ArrayList();
             jailList.add(jailGroup);
-            perms.setProperty("users." + args[0] + ".groups", jailList);
+            this.setGroup(player, jailList);
         }
         
         jailed.save();
@@ -148,16 +153,20 @@ public class SimpleJail extends JavaPlugin {
         }
         player.teleport(new Location(player.getWorld(), unjailCoords[0], unjailCoords[1], unjailCoords[2]));
         
-        if(!newPerms) {
-            perms.setProperty("users." + args[0] + ".group", jailed.getString(args[0]));
-            jailed.removeProperty(args[0]);
+        if (useBukkitPermissions || !newPerms) {
+            this.setGroup(player, jailed.getString(args[0]));
         } else {
-            if(jailed.getProperty(args[0]) instanceof String) this.convertPermission(args[0]);
+            if (jailed.getProperty(args[0]) instanceof String) {
+                this.convertPermission(args[0]);
+            }
             List groupList = jailed.getList(args[0]);
-            if(groupList == null) groupList = new ArrayList();
-            perms.setProperty("users." + args[0] + ".groups", groupList);
-            jailed.removeProperty(args[0]);
-        }        
+            if (groupList == null) {
+                groupList = new ArrayList();
+            }
+            this.setGroup(player, groupList);
+        }
+        
+        jailed.removeProperty(args[0]);
         
         jailed.save();
         perms.save();
@@ -232,6 +241,7 @@ public class SimpleJail extends JavaPlugin {
         unjailCoords[1] = config.getInt("unjail.y", 0);
         unjailCoords[2] = config.getInt("unjail.z", 0);
         jailGroup = config.getString("jailgroup", "Jailed");
+        useBukkitPermissions = config.getBoolean("usebukkitpermissions", config.getProperty("jailGroup") == null);
         config.save();
         
         File f = new File(this.getDataFolder().getPath() + File.separator + "jailed.yml");
@@ -285,6 +295,33 @@ public class SimpleJail extends JavaPlugin {
         if (jailed.getProperty(player.getName().toLowerCase()) != null)
             return true;
         return false;
+    }
+    
+    public boolean hasPermission(Player player, String permission) {
+        if(useBukkitPermissions)
+            return player.hasPermission(permission);
+        else
+            return permissions.has(player, permission);
+    }
+    
+    public void setGroup(Player player, String group) {
+        if (useBukkitPermissions) {
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + " " + group);
+        } else {
+            perms.setProperty("users." + player.getName() + ((newPerms) ? ".groups" : ".group"), group);
+        }
+    }
+    
+    public void setGroup(Player player, List<String> group) {
+        if (useBukkitPermissions) {
+            String params = new String();
+            for (String grp : group) {
+                params += " " + grp;
+            }
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
+        } else {
+            perms.setProperty("users." + player.getName() + ((newPerms) ? ".groups" : ".group"), group);
+        }
     }
     
 }
