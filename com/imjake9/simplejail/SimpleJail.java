@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -118,20 +117,17 @@ public class SimpleJail extends JavaPlugin {
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
         
         if (useBukkitPermissions || !newPerms) {
-            Object groupName;
-            if(useBukkitPermissions) {
-                List groups = bukkitPermissions.getGroups(player.getName());
-                groupName = new ArrayList();
-                for(Object g : groups) {
-                    String gName = ((Group)g).getName();
-                    gName = gName.replaceAll(Matcher.quoteReplacement("["),"");
-                    gName = gName.replaceAll(Matcher.quoteReplacement("]"),"");
-                    gName = gName.replaceAll(Matcher.quoteReplacement("'"),"");
-                    ((ArrayList)groupName).add(((Group)g).getName());
-                }
-            } else {
-                groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
+            List<String> groupName;
+            List groups = bukkitPermissions.getGroups(player.getName());
+            groupName = new ArrayList();
+            for(Object g : groups) {
+                String gName = ((Group)g).getName();
+                groupName.add(gName);
             }
+            jailed.setProperty(args[0], groupName);
+            this.setGroup(player, jailGroup);
+        } else if(!newPerms) {
+            String groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
             jailed.setProperty(args[0], groupName);
             this.setGroup(player, jailGroup);
         } else {
@@ -172,7 +168,9 @@ public class SimpleJail extends JavaPlugin {
         }
         player.teleport(new Location(player.getWorld(), unjailCoords[0], unjailCoords[1], unjailCoords[2]));
         
-        if (useBukkitPermissions || !newPerms) {
+        if (useBukkitPermissions) {
+            this.setGroup(player, jailed.getStringList(args[0], new ArrayList()));
+        } else if(!newPerms) {
             this.setGroup(player, jailed.getString(args[0]));
         } else {
             if (jailed.getProperty(args[0]) instanceof String) {
