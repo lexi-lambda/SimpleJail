@@ -1,9 +1,8 @@
 name: SimpleJail
 main: com.imjake9.simplejail.SimpleJail
 description: Very basic Jail plugin.
-version: 1.4.1
+version: 1.4.2
 author: imjake9
-depend: [Permissions]
 
 commands:
   jail:
