@@ -26,7 +26,7 @@ import org.bukkit.util.config.Configuration;
 public class SimpleJail extends JavaPlugin {
     
     private static final Logger log = Logger.getLogger("Minecraft");
-    private final ColouredConsoleSender console = ((CraftServer)this.getServer()).getServer().console;
+    private ColouredConsoleSender console;
     public static PermissionHandler permissions;
     public static PermissionsPlugin bukkitPermissions;
     private int[] jailCoords = new int[3];
@@ -47,6 +47,7 @@ public class SimpleJail extends JavaPlugin {
     @Override
     @SuppressWarnings("LoggerStringConcat")
     public void onEnable() {
+        console = ((CraftServer)this.getServer()).getServer().console;
         this.loadConfig();
         if(!useBukkitPermissions) this.setupPermissions();
         else bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("Permissions");
