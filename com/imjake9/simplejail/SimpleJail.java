@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -122,6 +123,10 @@ public class SimpleJail extends JavaPlugin {
                 List groups = bukkitPermissions.getGroups(player.getName());
                 groupName = new ArrayList();
                 for(Object g : groups) {
+                    String gName = ((Group)g).getName();
+                    gName = gName.replaceAll(Matcher.quoteReplacement("["),"");
+                    gName = gName.replaceAll(Matcher.quoteReplacement("]"),"");
+                    gName = gName.replaceAll(Matcher.quoteReplacement("'"),"");
                     ((ArrayList)groupName).add(((Group)g).getName());
                 }
             } else {
