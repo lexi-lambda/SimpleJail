@@ -2,6 +2,7 @@ package com.imjake9.simplejail;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
+import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class SimpleJail extends JavaPlugin {
     private static final Logger log = Logger.getLogger("Minecraft");
     private final ColouredConsoleSender console = ((CraftServer)this.getServer()).getServer().console;
     public static PermissionHandler permissions;
+    public static PermissionsPlugin bukkitPermissions;
     private int[] jailCoords = new int[3];
     private int[] unjailCoords = new int[3];
     private String jailGroup;
@@ -47,6 +49,7 @@ public class SimpleJail extends JavaPlugin {
     public void onEnable() {
         this.loadConfig();
         if(!useBukkitPermissions) this.setupPermissions();
+        else bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("Permissions");
         
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
@@ -112,7 +115,12 @@ public class SimpleJail extends JavaPlugin {
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
         
         if (useBukkitPermissions || !newPerms) {
-            String groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
+            Object groupName;
+            if(useBukkitPermissions) {
+                groupName = bukkitPermissions.getGroups(player.getName());
+            } else {
+                groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
+            }
             jailed.setProperty(args[0], groupName);
             this.setGroup(player, jailGroup);
         } else {
