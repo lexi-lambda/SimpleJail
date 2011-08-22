@@ -116,7 +116,7 @@ public class SimpleJail extends JavaPlugin {
         }
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
         
-        if (useBukkitPermissions || !newPerms) {
+        if (useBukkitPermissions) {
             List<String> groupName;
             List groups = bukkitPermissions.getGroups(player.getName());
             groupName = new ArrayList();
