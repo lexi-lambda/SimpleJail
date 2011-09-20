@@ -157,7 +157,7 @@ public class SimpleJail extends JavaPlugin {
         }
         
         // Convert old jail entries:
-        if (jailed.getProperty(args[0]) instanceof List) {
+        if (jailed.getProperty(args[0] + ".groups") == null) {
             List<String> groups = jailed.getStringList(args[0], new ArrayList<String>());
             jailed.removeProperty(args[0]);
             jailed.setProperty(args[0] + ".groups", groups);
@@ -269,11 +269,10 @@ public class SimpleJail extends JavaPlugin {
     public void setupPermissions() {
         
         Plugin bukkit = this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
-        Plugin plugin = this.getServer().getPluginManager().getPlugin("Permissions");
         
         if(bukkitPermissions == null){
            if(bukkit != null){
-               bukkitPermissions = (PermissionsPlugin)plugin;
+               bukkitPermissions = (PermissionsPlugin)bukkit;
            } else {
                log.info("[SimpleJail] ERROR: PermissionsBukkit not detected.");
                this.getServer().getPluginManager().disablePlugin(this);
@@ -329,7 +328,6 @@ public class SimpleJail extends JavaPlugin {
         for (String grp : group) {
             params += " " + grp;
         }
-        log.info("permissions player setgroup " + player.getName() + params);
         this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
     }
     

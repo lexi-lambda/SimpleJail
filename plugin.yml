@@ -23,3 +23,11 @@ commands:
     usage: |
            /<command>
            /<command> <x> <y> <z>
+
+permissions:
+  SimpleJail.*:
+    description: Gives access to all SimpleJail commands.
+    children:
+      SimpleJail.jail: true
+      SimpleJail.unjail: true
+      SimpleJail.setjail: true
