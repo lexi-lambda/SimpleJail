@@ -40,18 +40,22 @@ public class SimpleJail extends JavaPlugin {
     public boolean useBukkitPermissions = true;
     
     @Override
-    @SuppressWarnings("LoggerStringConcat")
     public void onDisable() {
         log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() +  " disabled.");
     }
 
     @Override
-    @SuppressWarnings("LoggerStringConcat")
     public void onEnable() {
+        
+        // Get console:
         console = ((CraftServer)this.getServer()).getServer().console;
+        
+        // Load configuration:
         this.loadConfig();
-        if(!useBukkitPermissions) this.setupPermissions();
-        else bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
+        
+        // Get permissions plugin:
+        bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
+        if(!this.isEnabled()) return;
         
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
@@ -63,131 +67,85 @@ public class SimpleJail extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
         
         if(commandLabel.equalsIgnoreCase("jail") && args.length == 1) {
-            if(sender instanceof Player) {
-                if(!hasPermission((Player)sender, "SimpleJail.jail")) return true;
-            }
+            if(!hasPermission(sender, "SimpleJail.jail")) return true;
             this.jailPlayer(sender, args);
             return true;
         } else if(commandLabel.equalsIgnoreCase("unjail") && args.length == 1) {
-            if(sender instanceof Player) {
-                if(!hasPermission((Player)sender, "SimpleJail.unjail")) return true;
-            }
+            if(!hasPermission(sender, "SimpleJail.unjail")) return true;
             this.unjailPlayer(sender, args);
             return true;
         } else if(commandLabel.equalsIgnoreCase("setjail") && (args.length == 0 || args.length == 3)) {
-            if(sender instanceof Player) {
-                if(!hasPermission((Player)sender, "SimpleJail.setjail")) return true;
-            }
+            if(!hasPermission(sender, "SimpleJail.setjail")) return true;
             this.setJail(sender, args);
             return true;
         } else if(commandLabel.equalsIgnoreCase("setunjail") && (args.length == 0 || args.length == 3)) {
-            if(sender instanceof Player) {
-                if(!hasPermission((Player)sender, "SimpleJail.setjail")) return true;
-            }
+            if(!hasPermission(sender, "SimpleJail.setjail")) return true;
             this.setUnjail(sender, args);
             return true;
         } else {
-            if(sender instanceof Player) {
-                if(!hasPermission((Player)sender, "SimpleJail.jail")) return true;
-                if(!hasPermission((Player)sender, "SimpleJail.unjail")) return true;
-                if(!hasPermission((Player)sender, "SimpleJail.setjail")) return true;
-            }
+            if(!hasPermission(sender, "SimpleJail.jail")) return true;
+            if(!hasPermission(sender, "SimpleJail.unjail")) return true;
+            if(!hasPermission(sender, "SimpleJail.setjail")) return true;
             return false;
         }
+        
     }
     
     public void jailPlayer(CommandSender sender, String[] args) {
         Player player = this.getServer().getPlayer(args[0]);
+        
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
             return;
         }
-        args[0] = player.getName();
         
-        //Compatibility code:
-        if(!(args[0].equals(args[0].toLowerCase())) && jailed.getProperty(args[0].toLowerCase()) != null) {
-            jailed.setProperty(args[0], args[0].toLowerCase());
-            jailed.removeProperty(args[0].toLowerCase());
-        }
+        args[0] = player.getName().toLowerCase();
         
+        // Check if player is slready jailed:
         if(jailed.getProperty(args[0]) != null) {
             sender.sendMessage(ChatColor.RED + "That player is already in jail!");
             return;
         }
+        
+        // Move player into jail:
         player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
         
-        if (useBukkitPermissions) {
-            List<String> groupName;
-            List groups = bukkitPermissions.getGroups(player.getName());
-            groupName = new ArrayList();
-            for(Object g : groups) {
-                String gName = ((Group)g).getName();
-                groupName.add(gName);
-            }
-            jailed.setProperty(args[0], groupName);
-            this.setGroup(player, jailGroup);
-        } else if(!newPerms) {
-            String groupName = permissions.getGroup(this.getServer().getWorlds().get(0).getName(), args[0]);
-            jailed.setProperty(args[0], groupName);
-            this.setGroup(player, jailGroup);
-        } else {
-            String[] groupName = permissions.getGroups(this.getServer().getWorlds().get(0).getName(), args[0]);
-            List groupList = Arrays.asList(groupName);
-            if (groupList == null) {
-                groupList = new ArrayList();
-            }
-            jailed.setProperty(args[0], groupList);
-            List jailList = new ArrayList();
-            jailList.add(jailGroup);
-            this.setGroup(player, jailList);
-        }
+        // if (bukkitPermissions != null) {
+        List<String> groupName = this.getGroups(player);
+        jailed.setProperty(args[0], groupName);
+        this.setGroup(player, jailGroup);
         
         jailed.save();
-        if(!useBukkitPermissions) perms.save();
-        if(!useBukkitPermissions) this.getServer().dispatchCommand(console, "permissions -reload all");
+        player.sendMessage(ChatColor.AQUA + "You have been jailed!");
         sender.sendMessage(ChatColor.AQUA + "Player sent to jail.");
     }
     
     public void unjailPlayer(CommandSender sender, String[] args) {
         Player player = this.getServer().getPlayer(args[0]);
+        
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
             return;
         }
-        args[0] = player.getName();
         
-        //Compatibility code:
-        if(!(args[0].equals(args[0].toLowerCase())) && jailed.getProperty(args[0].toLowerCase()) != null) {
-            jailed.setProperty(args[0], args[0].toLowerCase());
-            jailed.removeProperty(args[0].toLowerCase());
-        }
+        args[0] = player.getName().toLowerCase();
         
+        // Check if player is in jail:
         if(jailed.getProperty(args[0]) == null) {
             sender.sendMessage(ChatColor.RED + "That player is not in jail!");
             return;
         }
+        
+        // Move player out of jail:
         player.teleport(new Location(player.getWorld(), unjailCoords[0], unjailCoords[1], unjailCoords[2]));
         
-        if (useBukkitPermissions) {
-            this.setGroup(player, jailed.getStringList(args[0], new ArrayList()));
-        } else if(!newPerms) {
-            this.setGroup(player, jailed.getString(args[0]));
-        } else {
-            if (jailed.getProperty(args[0]) instanceof String) {
-                this.convertPermission(args[0]);
-            }
-            List groupList = jailed.getList(args[0]);
-            if (groupList == null) {
-                groupList = new ArrayList();
-            }
-            this.setGroup(player, groupList);
-        }
+        // if (bukkitPermissions != null) {
+        this.setGroup(player, jailed.getStringList(args[0], new ArrayList()));
         
         jailed.removeProperty(args[0]);
-        
         jailed.save();
-        if(!useBukkitPermissions) perms.save();
-        if(!useBukkitPermissions) this.getServer().dispatchCommand(((CraftServer)getServer()).getServer().console, "permissions -reload all");
+        
+        player.sendMessage(ChatColor.AQUA + "You have been removed from jail!");
         sender.sendMessage(ChatColor.AQUA + "Player removed from jail.");
     }
     
@@ -258,7 +216,6 @@ public class SimpleJail extends JavaPlugin {
         unjailCoords[1] = config.getInt("unjail.y", 0);
         unjailCoords[2] = config.getInt("unjail.z", 0);
         jailGroup = config.getString("jailgroup", "Jailed");
-        useBukkitPermissions = config.getBoolean("usebukkitpermissions", config.getProperty("jailgroup") == null);
         config.save();
         
         File f = new File(this.getDataFolder().getPath() + File.separator + "jailed.yml");
@@ -270,31 +227,19 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void setupPermissions() {
+        
+        Plugin bukkit = this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
         Plugin plugin = this.getServer().getPluginManager().getPlugin("Permissions");
         
-        if(permissions == null){
-           if(plugin != null){
-               permissions = ((Permissions)plugin).getHandler();
+        if(bukkitPermissions == null){
+           if(bukkit != null){
+               bukkitPermissions = (PermissionsPlugin)plugin;
            } else {
-               log.info("[SimpleJail] ERROR: Permissions not detected.");
+               log.info("[SimpleJail] ERROR: PermissionsBukkit not detected.");
                this.getServer().getPluginManager().disablePlugin(this);
                return;
            }
         }
-        
-        File f = new File(this.getFile().getParent() + File.separator + "Permissions" + File.separator + this.getServer().getWorlds().get(0).getName() + ".yml");
-        if(!f.exists()) {
-            f = new File(this.getFile().getParent() + File.separator + "Permissions" + File.separator + this.getServer().getWorlds().get(0).getName() + File.separator + "users.yml");
-            this.newPerms = true;
-        }
-        if(!f.exists()) {
-            log.info("[SimpleJail] ERROR: Permissions file not found.");
-            this.getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        
-        perms = new Configuration(f);
-        perms.load();
     }
     
     public void convertPermission(String key) {
@@ -314,31 +259,33 @@ public class SimpleJail extends JavaPlugin {
         return false;
     }
     
-    public boolean hasPermission(Player player, String permission) {
-        if(useBukkitPermissions)
-            return player.hasPermission(permission);
-        else
-            return permissions.has(player, permission);
+    public boolean hasPermission(CommandSender sender, String permission) {
+        if (sender instanceof Player)
+            return sender.hasPermission(permission);
+        else return true;
+    }
+    
+    public List<String> getGroups(Player player) {
+        // if(bukkitPermissions != null) {
+        List<Group> groups = bukkitPermissions.getGroups(player.getName());
+        List<String> stringGroups = new ArrayList<String>();
+        for (Group g : groups) {
+            stringGroups.add(g.getName());
+        }
+        return stringGroups;
     }
     
     public void setGroup(Player player, String group) {
-        if (useBukkitPermissions) {
-            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + " " + group);
-        } else {
-            perms.setProperty("users." + player.getName() + ((newPerms) ? ".groups" : ".group"), group);
-        }
+        // if (bukkitPermissions != null)
+        this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + " " + group);
     }
     
     public void setGroup(Player player, List<String> group) {
-        if (useBukkitPermissions) {
-            String params = new String();
-            for (String grp : group) {
-                params += " " + grp;
-            }
-            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
-        } else {
-            perms.setProperty("users." + player.getName() + ((newPerms) ? ".groups" : ".group"), group);
+        // if (bukkitPermissions != null) {
+        String params = new String();
+        for (String grp : group) {
+            params += " " + grp;
         }
+        this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
     }
-    
 }
