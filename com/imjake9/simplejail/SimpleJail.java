@@ -1,13 +1,10 @@
 package com.imjake9.simplejail;
 
-import com.nijiko.permissions.PermissionHandler;
-import com.nijikokun.bukkit.Permissions.Permissions;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -27,17 +24,13 @@ import org.bukkit.util.config.Configuration;
 public class SimpleJail extends JavaPlugin {
     
     private static final Logger log = Logger.getLogger("Minecraft");
-    private ColouredConsoleSender console;
-    public static PermissionHandler permissions;
+    public ColouredConsoleSender console;
     public static PermissionsPlugin bukkitPermissions;
     private int[] jailCoords = new int[3];
     private int[] unjailCoords = new int[3];
     private String jailGroup;
-    private Configuration perms;
     private Configuration jailed;
-    private boolean newPerms = false;
     private SimpleJailPlayerListener listener;
-    public boolean useBukkitPermissions = true;
     
     @Override
     public void onDisable() {
@@ -59,6 +52,30 @@ public class SimpleJail extends JavaPlugin {
         
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
+        this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_JOIN, listener, Priority.Normal, this);
+        
+        this.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+
+            @Override
+            public void run() {
+                
+                long currentTime = System.currentTimeMillis();
+                
+                for (Player p : getServer().getOnlinePlayers()) {
+                    
+                    if (!playerIsJailed(p) || !playerIsTempJailed(p)) continue;
+
+                    double tempTime = getTempJailTime(p);
+
+                    if (tempTime <= currentTime) {
+                        unjailPlayer(console, new String[]{p.getName()}, true);
+                    }
+                    
+                }
+                
+            }
+            
+        }, 600, 600);
         
         log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() + " enabled.");
     }
@@ -66,7 +83,7 @@ public class SimpleJail extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
         
-        if(commandLabel.equalsIgnoreCase("jail") && args.length == 1) {
+        if(commandLabel.equalsIgnoreCase("jail") && (args.length == 1 || args.length == 2)) {
             if(!hasPermission(sender, "SimpleJail.jail")) return true;
             this.jailPlayer(sender, args);
             return true;
@@ -112,20 +129,38 @@ public class SimpleJail extends JavaPlugin {
         
         // if (bukkitPermissions != null) {
         List<String> groupName = this.getGroups(player);
-        jailed.setProperty(args[0], groupName);
+        jailed.setProperty(args[0] + ".groups", groupName);
         this.setGroup(player, jailGroup);
         
+        int minutes = 0;
+        
+        if(args.length == 2) {
+            minutes = this.parseTimeString(args[1]);
+            if(minutes != -1) {
+                double tempTime = System.currentTimeMillis() + (minutes * 60000);
+                jailed.setProperty(args[0] + ".tempTime", tempTime);
+            }
+        }
+        
         jailed.save();
-        player.sendMessage(ChatColor.AQUA + "You have been jailed!");
+        if(args.length == 1 || minutes == -1) player.sendMessage(ChatColor.AQUA + "You have been jailed!");
+        else player.sendMessage(ChatColor.AQUA + "You have been jailed for " + this.prettifyMinutes(minutes) + "!");
         sender.sendMessage(ChatColor.AQUA + "Player sent to jail.");
     }
     
-    public void unjailPlayer(CommandSender sender, String[] args) {
+    public void unjailPlayer(CommandSender sender, String[] args, boolean fromTempJail) {
         Player player = this.getServer().getPlayer(args[0]);
         
         if(player == null) {
             sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
             return;
+        }
+        
+        // Convert old jail entries:
+        if (jailed.getProperty(args[0]) instanceof List) {
+            List<String> groups = jailed.getStringList(args[0], new ArrayList<String>());
+            jailed.removeProperty(args[0]);
+            jailed.setProperty(args[0] + ".groups", groups);
         }
         
         args[0] = player.getName().toLowerCase();
@@ -140,13 +175,18 @@ public class SimpleJail extends JavaPlugin {
         player.teleport(new Location(player.getWorld(), unjailCoords[0], unjailCoords[1], unjailCoords[2]));
         
         // if (bukkitPermissions != null) {
-        this.setGroup(player, jailed.getStringList(args[0], new ArrayList()));
+        this.setGroup(player, jailed.getStringList(args[0] + ".groups", new ArrayList()));
         
         jailed.removeProperty(args[0]);
         jailed.save();
         
         player.sendMessage(ChatColor.AQUA + "You have been removed from jail!");
-        sender.sendMessage(ChatColor.AQUA + "Player removed from jail.");
+        if (fromTempJail) sender.sendMessage(ChatColor.AQUA + player.getName() + " auto-unjailed.");
+        else sender.sendMessage(ChatColor.AQUA + "Player removed from jail.");
+    }
+    
+    public void unjailPlayer(CommandSender sender, String[] args) {
+        this.unjailPlayer(sender, args, false);
     }
     
     public void setJail(CommandSender sender, String args[]) {
@@ -242,13 +282,6 @@ public class SimpleJail extends JavaPlugin {
         }
     }
     
-    public void convertPermission(String key) {
-        List groupList = new ArrayList();
-        groupList.add(key);
-        jailed.removeProperty(key);
-        jailed.setProperty(key, groupList);
-    }
-    
     public Location getJailLocation(Player player) {
         return new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]);
     }
@@ -257,6 +290,16 @@ public class SimpleJail extends JavaPlugin {
         if (jailed.getProperty(player.getName().toLowerCase()) != null)
             return true;
         return false;
+    }
+    
+    public boolean playerIsTempJailed(Player player) {
+        if (jailed.getProperty(player.getName().toLowerCase() + ".tempTime") != null)
+            return true;
+        return false;
+    }
+    
+    public double getTempJailTime(Player player) {
+        return jailed.getDouble(player.getName().toLowerCase() + ".tempTime", -1);
     }
     
     public boolean hasPermission(CommandSender sender, String permission) {
@@ -286,6 +329,31 @@ public class SimpleJail extends JavaPlugin {
         for (String grp : group) {
             params += " " + grp;
         }
+        log.info("permissions player setgroup " + player.getName() + params);
         this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
+    }
+    
+    public String prettifyMinutes(int minutes) {
+        if (minutes == 1) return "one minute";
+        if (minutes < 60) return minutes + "minutes";
+        if (minutes % 60 == 0) {
+            if(minutes / 60 == 1) return "one hour";
+            else return (minutes / 60) + "hours";
+        }
+        int m = minutes % 60;
+        int h = (minutes - m) / 60;
+        return h + "h" + m + "m";
+    }
+    
+    public int parseTimeString(String time) {
+        if(!time.matches("[0-9]*h?[0-9]+m?")) return -1;
+        if(time.matches("[0-9]+")) return Integer.parseInt(time);
+        if(time.matches("[0-9]+m")) return Integer.parseInt(time.split("m")[0]);
+        if(time.matches("[0-9]+h")) return Integer.parseInt(time.split("h")[0]) * 60;
+        if(time.matches("[0-9]+h[0-9]+m")) {
+            String[] split = time.split("[mh]");
+            return (Integer.parseInt(split[0]) * 60) + Integer.parseInt(split[1]);
+        }
+        return -1;
     }
 }
