@@ -20,12 +20,16 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
+import ru.tehkode.permissions.PermissionGroup;
+import ru.tehkode.permissions.PermissionManager;
+import ru.tehkode.permissions.bukkit.PermissionsEx;
 
 public class SimpleJail extends JavaPlugin {
     
     private static final Logger log = Logger.getLogger("Minecraft");
     public ColouredConsoleSender console;
-    public static PermissionsPlugin bukkitPermissions;
+    private PermissionsPlugin bukkitPermissions;
+    private PermissionManager pexPermissions;
     private int[] jailCoords = new int[3];
     private int[] unjailCoords = new int[3];
     private String jailGroup;
@@ -269,15 +273,27 @@ public class SimpleJail extends JavaPlugin {
     public void setupPermissions() {
         
         Plugin bukkit = this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
+        Plugin pex = this.getServer().getPluginManager().getPlugin("PermissionsEx");
+        
+        boolean permissionsLoaded = false;
         
         if(bukkitPermissions == null){
            if(bukkit != null){
                bukkitPermissions = (PermissionsPlugin)bukkit;
-           } else {
-               log.info("[SimpleJail] ERROR: PermissionsBukkit not detected.");
-               this.getServer().getPluginManager().disablePlugin(this);
-               return;
+               permissionsLoaded = true;
            }
+        }
+        if (pexPermissions == null) {
+            if (pex != null) {
+                pexPermissions = PermissionsEx.getPermissionManager();
+                permissionsLoaded = true;
+            }
+        }
+        
+        if(!permissionsLoaded) {
+            log.info("[SimpleJail] ERROR: Permissions plugin not detected.");
+            this.getServer().getPluginManager().disablePlugin(this);
+            return;
         }
     }
     
@@ -308,27 +324,42 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public List<String> getGroups(Player player) {
-        // if(bukkitPermissions != null) {
-        List<Group> groups = bukkitPermissions.getGroups(player.getName());
-        List<String> stringGroups = new ArrayList<String>();
-        for (Group g : groups) {
-            stringGroups.add(g.getName());
+        if(bukkitPermissions != null) {
+            List<Group> groups = bukkitPermissions.getGroups(player.getName());
+            List<String> stringGroups = new ArrayList<String>();
+            for (Group g : groups) {
+                stringGroups.add(g.getName());
+            }
+            return stringGroups;
+        } else if (pexPermissions != null) {
+            PermissionGroup[] groups = pexPermissions.getUser(player).getGroups();
+            List<String> stringGroups = new ArrayList<String>();
+            for (PermissionGroup g : groups) {
+                stringGroups.add(g.getName());
+            }
+            return stringGroups;
         }
-        return stringGroups;
+        
+        return null;
     }
     
     public void setGroup(Player player, String group) {
-        // if (bukkitPermissions != null)
-        this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + " " + group);
+        if (bukkitPermissions != null)
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + " " + group);
+        else if(pexPermissions != null)
+            pexPermissions.getUser(player).setGroups(new String[] { group });
     }
     
     public void setGroup(Player player, List<String> group) {
-        // if (bukkitPermissions != null) {
-        String params = new String();
-        for (String grp : group) {
-            params += " " + grp;
+        if (bukkitPermissions != null) {
+            String params = new String();
+            for (String grp : group) {
+                params += " " + grp;
+            }
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
+        } else if(pexPermissions != null) {
+            pexPermissions.getUser(player).setGroups(group.toArray(new String[0]));
         }
-        this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
     }
     
     public String prettifyMinutes(int minutes) {
