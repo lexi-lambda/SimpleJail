@@ -388,10 +388,10 @@ public class SimpleJail extends JavaPlugin {
     
     public String prettifyMinutes(int minutes) {
         if (minutes == 1) return "one minute";
-        if (minutes < 60) return minutes + "minutes";
+        if (minutes < 60) return minutes + " minutes";
         if (minutes % 60 == 0) {
             if(minutes / 60 == 1) return "one hour";
-            else return (minutes / 60) + "hours";
+            else return (minutes / 60) + " hours";
         }
         int m = minutes % 60;
         int h = (minutes - m) / 60;
@@ -399,7 +399,7 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public int parseTimeString(String time) {
-        if(!time.matches("[0-9]*h?[0-9]+m?")) return -1;
+        if(!time.matches("[0-9]*h?[0-9]*m?")) return -1;
         if(time.matches("[0-9]+")) return Integer.parseInt(time);
         if(time.matches("[0-9]+m")) return Integer.parseInt(time.split("m")[0]);
         if(time.matches("[0-9]+h")) return Integer.parseInt(time.split("h")[0]) * 60;
