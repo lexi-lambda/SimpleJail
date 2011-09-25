@@ -103,10 +103,15 @@ public class SimpleJail extends JavaPlugin {
             if(!hasPermission(sender, "SimpleJail.setjail")) return true;
             this.setUnjail(sender, args);
             return true;
+        } else if(commandLabel.equalsIgnoreCase("jailtime") && args.length <= 1) {
+            if(!hasPermission(sender, "SimpleJail.jailtime")) return true;
+            this.jailTime(sender, args);
+            return true;
         } else {
             if(!hasPermission(sender, "SimpleJail.jail")) return true;
             if(!hasPermission(sender, "SimpleJail.unjail")) return true;
             if(!hasPermission(sender, "SimpleJail.setjail")) return true;
+            if(!hasPermission(sender, "SimpleJail.jailtime")) return true;
             return false;
         }
         
@@ -193,7 +198,7 @@ public class SimpleJail extends JavaPlugin {
         this.unjailPlayer(sender, args, false);
     }
     
-    public void setJail(CommandSender sender, String args[]) {
+    public void setJail(CommandSender sender, String[] args) {
         if(!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "Only players can use that.");
             return;
@@ -222,7 +227,7 @@ public class SimpleJail extends JavaPlugin {
         sender.sendMessage(ChatColor.AQUA + "Jail point saved.");
     }
     
-    public void setUnjail(CommandSender sender, String args[]) {
+    public void setUnjail(CommandSender sender, String[] args) {
         if(!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "Only players can use that.");
             return;
@@ -249,6 +254,25 @@ public class SimpleJail extends JavaPlugin {
         config.setProperty("unjail.z", unjailCoords[2]);
         config.save();
         sender.sendMessage(ChatColor.AQUA + "Unjail point saved.");
+    }
+    
+    public void jailTime(CommandSender sender, String[] args) {
+        if(!(sender instanceof Player) && args.length == 0) {
+            sender.sendMessage(ChatColor.RED + "Must specify a player.");
+            return;
+        }
+        Player player = (args.length == 0) ? (Player)sender : this.getServer().getPlayer(args[0]);
+        if(player == null) {
+            sender.sendMessage(ChatColor.RED + "Couldn't find player '" + args[0] + "'.");
+            return;
+        }
+        if(!this.playerIsTempJailed(player)) {
+            if(args.length == 0) sender.sendMessage(ChatColor.RED + "You are not tempjailed.");
+            else sender.sendMessage(ChatColor.RED + "That player is not tempjailed.");
+            return;
+        }
+        int minutes = (int)((this.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
+        sender.sendMessage(ChatColor.AQUA + "Remaining jail time: " + this.prettifyMinutes(minutes));
     }
     
     public void loadConfig() {

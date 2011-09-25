@@ -23,11 +23,20 @@ commands:
     usage: |
            /<command>
            /<command> <x> <y> <z>
+  jailtime:
+    description: Checks remaining tempjail time.
+    usage: |
+           /<command>
+           /<command> <player>
 
 permissions:
+  SimpleJail.jailtime:
+    description: Gives access to the jailtime command.
+    default: true
   SimpleJail.*:
     description: Gives access to all SimpleJail commands.
     children:
       SimpleJail.jail: true
       SimpleJail.unjail: true
       SimpleJail.setjail: true
+      SimpleJail.jailtime: true
