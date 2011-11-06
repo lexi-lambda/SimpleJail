@@ -3,12 +3,10 @@ package com.imjake9.simplejail;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -21,7 +19,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
 import ru.tehkode.permissions.PermissionGroup;
 import ru.tehkode.permissions.PermissionManager;
 import ru.tehkode.permissions.bukkit.PermissionsEx;
@@ -148,10 +145,9 @@ public class SimpleJail extends JavaPlugin {
                 jailed.set(args[0] + ".tempTime", tempTime);
             }
         }
-        try {
-            jailed.save(jailed.getCurrentPath());
-        } catch (IOException ex) {
-        }
+        
+        this.saveJail();
+        
         if (player != null) {
             if(args.length == 1 || minutes == -1) player.sendMessage(ChatColor.AQUA + "You have been jailed!");
             else player.sendMessage(ChatColor.AQUA + "You have been jailed for " + this.prettifyMinutes(minutes) + "!");
@@ -189,10 +185,8 @@ public class SimpleJail extends JavaPlugin {
         this.setGroup(args[0], jailed.getList(args[0] + ".groups", new ArrayList()));
         
         jailed.set(args[0], null);
-        try {
-            jailed.save(jailed.getCurrentPath());
-        } catch (IOException ex) {
-        }
+        
+        this.saveJail();
         
         player.sendMessage(ChatColor.AQUA + "You have been removed from jail!");
         if (fromTempJail) sender.sendMessage(ChatColor.AQUA + player.getName() + " auto-unjailed.");
@@ -223,12 +217,14 @@ public class SimpleJail extends JavaPlugin {
                     Integer.parseInt(args[2]));
         }
         
-        Configuration config = this.getConfiguration();
-        config.setProperty("jail.x", jailLoc.getX());
-        config.setProperty("jail.y", jailLoc.getY());
-        config.setProperty("jail.z", jailLoc.getZ());
-        config.setProperty("jail.world", jailLoc.getWorld().getName());
-        config.save();
+        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        config.set("jail.x", jailLoc.getX());
+        config.set("jail.y", jailLoc.getY());
+        config.set("jail.z", jailLoc.getZ());
+        config.set("jail.world", jailLoc.getWorld().getName());
+        
+        this.saveConfig();
+        
         sender.sendMessage(ChatColor.AQUA + "Jail point saved.");
     }
     
@@ -252,12 +248,14 @@ public class SimpleJail extends JavaPlugin {
                     Integer.parseInt(args[2]));
         }
         
-        Configuration config = this.getConfiguration();
-        config.setProperty("unjail.x", unjailLoc.getX());
-        config.setProperty("unjail.y", unjailLoc.getY());
-        config.setProperty("unjail.z", unjailLoc.getZ());
-        config.setProperty("unjail.world", unjailLoc.getWorld().getName());
-        config.save();
+        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        config.set("unjail.x", unjailLoc.getX());
+        config.set("unjail.y", unjailLoc.getY());
+        config.set("unjail.z", unjailLoc.getZ());
+        config.set("unjail.world", unjailLoc.getWorld().getName());
+        
+        this.saveConfig();
+        
         sender.sendMessage(ChatColor.AQUA + "Unjail point saved.");
     }
     
@@ -281,8 +279,37 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void loadConfig() {
-        // Configuration config = this.getConfiguration();
-        YamlConfiguration config = (YamlConfiguration)this.getConfig();
+        // Init config files:
+        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        config.options().copyDefaults(true);
+        config.addDefault("jailgroup", "Jailed");
+        config.addDefault("jail.world", this.getServer().getWorlds().get(0).getName());
+        config.addDefault("jail.x", 0);
+        config.addDefault("jail.y", 0);
+        config.addDefault("jail.z", 0);
+        config.addDefault("unjail.world", this.getServer().getWorlds().get(0).getName());
+        config.addDefault("unjail.x", 0);
+        config.addDefault("unjail.y", 0);
+        config.addDefault("unjail.z", 0);
+        
+        jailed = new YamlConfiguration();
+        File f = new File(this.getDataFolder().getPath() + File.separator + "jailed.yml");
+        
+        try {
+            if(!f.exists()) {
+                f.getParentFile().mkdirs();
+                f.createNewFile();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        
+        try {
+            jailed.load(f);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
         jailLoc = new Location(
                 this.getServer().getWorld(config.getString("jail.world", this.getServer().getWorlds().get(0).getName())),
                 config.getInt("jail.x", 0),
@@ -295,18 +322,7 @@ public class SimpleJail extends JavaPlugin {
                 config.getInt("unjail.z", 0));
         jailGroup = config.getString("jailgroup", "Jailed");
         
-        File f = new File(this.getDataFolder().getPath() + File.separator + "jailed.yml");
-        try {
-            if(!f.exists()) f.createNewFile();
-        } catch (IOException ex) {}
-        jailed = new YamlConfiguration();
-        
-        try {
-            config.save(this.getConfig().getCurrentPath());
-            jailed.load(f);
-        } catch (Exception ex) {
-        }
-        
+        this.saveConfig();
         
     }
     
@@ -424,5 +440,13 @@ public class SimpleJail extends JavaPlugin {
             return (Integer.parseInt(split[0]) * 60) + Integer.parseInt(split[1]);
         }
         return -1;
+    }
+    
+    public void saveJail() {
+        try {
+            jailed.save(new File(this.getDataFolder().getPath() + File.separator + "jailed.yml"));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 }
