@@ -50,7 +50,7 @@ public class SimpleJail extends JavaPlugin {
         this.loadConfig();
         
         // Get permissions plugin:
-        bukkitPermissions = (PermissionsPlugin)this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
+        this.setupPermissions();
         if(!this.isEnabled()) return;
         
         listener = new SimpleJailPlayerListener(this);
