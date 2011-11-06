@@ -218,9 +218,9 @@ public class SimpleJail extends JavaPlugin {
         }
         
         YamlConfiguration config = (YamlConfiguration) this.getConfig();
-        config.set("jail.x", jailLoc.getX());
-        config.set("jail.y", jailLoc.getY());
-        config.set("jail.z", jailLoc.getZ());
+        config.set("jail.x", (int) jailLoc.getX());
+        config.set("jail.y", (int) jailLoc.getY());
+        config.set("jail.z", (int) jailLoc.getZ());
         config.set("jail.world", jailLoc.getWorld().getName());
         
         this.saveConfig();
@@ -249,9 +249,9 @@ public class SimpleJail extends JavaPlugin {
         }
         
         YamlConfiguration config = (YamlConfiguration) this.getConfig();
-        config.set("unjail.x", unjailLoc.getX());
-        config.set("unjail.y", unjailLoc.getY());
-        config.set("unjail.z", unjailLoc.getZ());
+        config.set("unjail.x", (int) unjailLoc.getX());
+        config.set("unjail.y", (int) unjailLoc.getY());
+        config.set("unjail.z", (int) unjailLoc.getZ());
         config.set("unjail.world", unjailLoc.getWorld().getName());
         
         this.saveConfig();
