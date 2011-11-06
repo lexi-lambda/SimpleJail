@@ -1,5 +1,6 @@
 package com.imjake9.simplejail;
 
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
@@ -29,7 +30,7 @@ public class SimpleJailPlayerListener extends PlayerListener {
     @Override
     public void onPlayerJoin(PlayerJoinEvent event) {
         
-        Player player = event.getPlayer();
+        final Player player = event.getPlayer();
         
         if(!plugin.playerIsJailed(player) || !plugin.playerIsTempJailed(player)) return;
         
@@ -39,6 +40,21 @@ public class SimpleJailPlayerListener extends PlayerListener {
         if (tempTime <= currentTime) {
             plugin.unjailPlayer(plugin.console, new String[] {player.getName()}, true);
         }
+        
+        // If player is still jailed, send messages:
+        if (!plugin.playerIsJailed(player)) return;
+        if (plugin.playerIsTempJailed(player)) {
+            int minutes = (int)((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
+            player.sendMessage(ChatColor.AQUA + "You are jailed for " + plugin.prettifyMinutes(minutes) + ".");
+        } else player.sendMessage(ChatColor.AQUA + "You are jailed.");
+        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+
+            @Override
+            public void run() {
+                player.teleport(plugin.getJailLocation(player));
+            }
+            
+        }, 60);
         
     }
     

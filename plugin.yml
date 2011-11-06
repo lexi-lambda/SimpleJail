@@ -1,7 +1,7 @@
 name: SimpleJail
 main: com.imjake9.simplejail.SimpleJail
 description: Very basic Jail plugin.
-version: 1.5.1
+version: 1.6
 author: imjake9
 
 commands:
@@ -17,12 +17,12 @@ commands:
     description: Sets the Jail point.
     usage: |
            /<command>
-           /<command> <x> <y> <z>
+           /<command> <x> <y> <z> <world>
   setunjail:
     description: Sets the Jail removal point.
     usage: |
            /<command>
-           /<command> <x> <y> <z>
+           /<command> <x> <y> <z> <world>
   jailtime:
     description: Checks remaining tempjail time.
     usage: |

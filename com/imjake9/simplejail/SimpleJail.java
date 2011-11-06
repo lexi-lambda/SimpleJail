@@ -3,17 +3,19 @@ package com.imjake9.simplejail;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.command.ColouredConsoleSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
@@ -27,13 +29,13 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
 public class SimpleJail extends JavaPlugin {
     
     private static final Logger log = Logger.getLogger("Minecraft");
-    public ColouredConsoleSender console;
+    public ConsoleCommandSender console;
     private PermissionsPlugin bukkitPermissions;
     private PermissionManager pexPermissions;
-    private int[] jailCoords = new int[3];
-    private int[] unjailCoords = new int[3];
+    private Location jailLoc;
+    private Location unjailLoc;
     private String jailGroup;
-    private Configuration jailed;
+    private YamlConfiguration jailed;
     private SimpleJailPlayerListener listener;
     
     @Override
@@ -45,7 +47,7 @@ public class SimpleJail extends JavaPlugin {
     public void onEnable() {
         
         // Get console:
-        console = ((CraftServer)this.getServer()).getServer().console;
+        console = this.getServer().getConsoleSender();
         
         // Load configuration:
         this.loadConfig();
@@ -95,11 +97,11 @@ public class SimpleJail extends JavaPlugin {
             if(!hasPermission(sender, "SimpleJail.unjail")) return true;
             this.unjailPlayer(sender, args);
             return true;
-        } else if(commandLabel.equalsIgnoreCase("setjail") && (args.length == 0 || args.length == 3)) {
+        } else if(commandLabel.equalsIgnoreCase("setjail") && (args.length == 0 || args.length == 4)) {
             if(!hasPermission(sender, "SimpleJail.setjail")) return true;
             this.setJail(sender, args);
             return true;
-        } else if(commandLabel.equalsIgnoreCase("setunjail") && (args.length == 0 || args.length == 3)) {
+        } else if(commandLabel.equalsIgnoreCase("setunjail") && (args.length == 0 || args.length == 4)) {
             if(!hasPermission(sender, "SimpleJail.setjail")) return true;
             this.setUnjail(sender, args);
             return true;
@@ -120,26 +122,22 @@ public class SimpleJail extends JavaPlugin {
     public void jailPlayer(CommandSender sender, String[] args) {
         Player player = this.getServer().getPlayer(args[0]);
         
-        if(player == null) {
-            sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
-            return;
-        }
-        
-        args[0] = player.getName().toLowerCase();
+        args[0] = (player == null) ? args[0].toLowerCase() : player.getName().toLowerCase();
         
         // Check if player is slready jailed:
-        if(jailed.getProperty(args[0]) != null) {
+        if(jailed.get(args[0]) != null) {
             sender.sendMessage(ChatColor.RED + "That player is already in jail!");
             return;
         }
         
         // Move player into jail:
-        player.teleport(new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]));
+        if (player != null)
+            player.teleport(jailLoc);
         
         // if (bukkitPermissions != null) {
-        List<String> groupName = this.getGroups(player);
-        jailed.setProperty(args[0] + ".groups", groupName);
-        this.setGroup(player, jailGroup);
+        List<String> groupName = this.getGroups(args[0]);
+        jailed.set(args[0] + ".groups", groupName);
+        this.setGroup(args[0], jailGroup);
         
         int minutes = 0;
         
@@ -147,13 +145,17 @@ public class SimpleJail extends JavaPlugin {
             minutes = this.parseTimeString(args[1]);
             if(minutes != -1) {
                 double tempTime = System.currentTimeMillis() + (minutes * 60000);
-                jailed.setProperty(args[0] + ".tempTime", tempTime);
+                jailed.set(args[0] + ".tempTime", tempTime);
             }
         }
-        
-        jailed.save();
-        if(args.length == 1 || minutes == -1) player.sendMessage(ChatColor.AQUA + "You have been jailed!");
-        else player.sendMessage(ChatColor.AQUA + "You have been jailed for " + this.prettifyMinutes(minutes) + "!");
+        try {
+            jailed.save(jailed.getCurrentPath());
+        } catch (IOException ex) {
+        }
+        if (player != null) {
+            if(args.length == 1 || minutes == -1) player.sendMessage(ChatColor.AQUA + "You have been jailed!");
+            else player.sendMessage(ChatColor.AQUA + "You have been jailed for " + this.prettifyMinutes(minutes) + "!");
+        }
         sender.sendMessage(ChatColor.AQUA + "Player sent to jail.");
     }
     
@@ -166,28 +168,31 @@ public class SimpleJail extends JavaPlugin {
         }
         
         // Convert old jail entries:
-        if (jailed.getProperty(args[0] + ".groups") == null) {
-            List<String> groups = jailed.getStringList(args[0], new ArrayList<String>());
-            jailed.removeProperty(args[0]);
-            jailed.setProperty(args[0] + ".groups", groups);
+        if (jailed.get(args[0] + ".groups") == null) {
+            List<String> groups = jailed.getList(args[0], new ArrayList<String>());
+            jailed.set(args[0], null);
+            jailed.set(args[0] + ".groups", groups);
         }
         
         args[0] = player.getName().toLowerCase();
         
         // Check if player is in jail:
-        if(jailed.getProperty(args[0]) == null) {
+        if(jailed.get(args[0]) == null) {
             sender.sendMessage(ChatColor.RED + "That player is not in jail!");
             return;
         }
         
         // Move player out of jail:
-        player.teleport(new Location(player.getWorld(), unjailCoords[0], unjailCoords[1], unjailCoords[2]));
+        player.teleport(unjailLoc);
         
         // if (bukkitPermissions != null) {
-        this.setGroup(player, jailed.getStringList(args[0] + ".groups", new ArrayList()));
+        this.setGroup(args[0], jailed.getList(args[0] + ".groups", new ArrayList()));
         
-        jailed.removeProperty(args[0]);
-        jailed.save();
+        jailed.set(args[0], null);
+        try {
+            jailed.save(jailed.getCurrentPath());
+        } catch (IOException ex) {
+        }
         
         player.sendMessage(ChatColor.AQUA + "You have been removed from jail!");
         if (fromTempJail) sender.sendMessage(ChatColor.AQUA + player.getName() + " auto-unjailed.");
@@ -199,59 +204,59 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void setJail(CommandSender sender, String[] args) {
-        if(!(sender instanceof Player)) {
+        if(!(sender instanceof Player) && args.length != 4) {
             sender.sendMessage(ChatColor.RED + "Only players can use that.");
             return;
         }
         if(args.length == 0) {
             Player player = (Player)sender;
-            Location loc = player.getLocation();
-            jailCoords[0] = loc.getBlockX();
-            jailCoords[1] = loc.getBlockY();
-            jailCoords[2] = loc.getBlockZ();
+            jailLoc = player.getLocation();
         } else {
             if(!(new Scanner(args[0]).hasNextInt()) || !(new Scanner(args[1]).hasNextInt()) || !(new Scanner(args[2]).hasNextInt())) {
                 sender.sendMessage(ChatColor.RED + "Invalid coordinate.");
                 return;
             }
-            jailCoords[0] = Integer.parseInt(args[0]);
-            jailCoords[1] = Integer.parseInt(args[1]);
-            jailCoords[2] = Integer.parseInt(args[2]);
+            jailLoc = new Location(
+                    this.getServer().getWorld(args[3]),
+                    Integer.parseInt(args[0]),
+                    Integer.parseInt(args[1]),
+                    Integer.parseInt(args[2]));
         }
         
         Configuration config = this.getConfiguration();
-        config.setProperty("jail.x", jailCoords[0]);
-        config.setProperty("jail.y", jailCoords[1]);
-        config.setProperty("jail.z", jailCoords[2]);
+        config.setProperty("jail.x", jailLoc.getX());
+        config.setProperty("jail.y", jailLoc.getY());
+        config.setProperty("jail.z", jailLoc.getZ());
+        config.setProperty("jail.world", jailLoc.getWorld().getName());
         config.save();
         sender.sendMessage(ChatColor.AQUA + "Jail point saved.");
     }
     
     public void setUnjail(CommandSender sender, String[] args) {
-        if(!(sender instanceof Player)) {
+        if(!(sender instanceof Player) && args.length != 4) {
             sender.sendMessage(ChatColor.RED + "Only players can use that.");
             return;
         }
         if(args.length == 0) {
             Player player = (Player)sender;
-            Location loc = player.getLocation();
-            unjailCoords[0] = loc.getBlockX();
-            unjailCoords[1] = loc.getBlockY();
-            unjailCoords[2] = loc.getBlockZ();
+            unjailLoc = player.getLocation();
         } else {
             if(!(new Scanner(args[0]).hasNextInt()) || !(new Scanner(args[1]).hasNextInt()) || !(new Scanner(args[2]).hasNextInt())) {
                 sender.sendMessage(ChatColor.RED + "Invalid coordinate.");
                 return;
             }
-            unjailCoords[0] = Integer.parseInt(args[0]);
-            unjailCoords[1] = Integer.parseInt(args[1]);
-            unjailCoords[2] = Integer.parseInt(args[2]);
+            unjailLoc = new Location(
+                    this.getServer().getWorld(args[3]),
+                    Integer.parseInt(args[0]),
+                    Integer.parseInt(args[1]),
+                    Integer.parseInt(args[2]));
         }
         
         Configuration config = this.getConfiguration();
-        config.setProperty("unjail.x", unjailCoords[0]);
-        config.setProperty("unjail.y", unjailCoords[1]);
-        config.setProperty("unjail.z", unjailCoords[2]);
+        config.setProperty("unjail.x", unjailLoc.getX());
+        config.setProperty("unjail.y", unjailLoc.getY());
+        config.setProperty("unjail.z", unjailLoc.getZ());
+        config.setProperty("unjail.world", unjailLoc.getWorld().getName());
         config.save();
         sender.sendMessage(ChatColor.AQUA + "Unjail point saved.");
     }
@@ -276,22 +281,33 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public void loadConfig() {
-        Configuration config = this.getConfiguration();
-        jailCoords[0] = config.getInt("jail.x", 0);
-        jailCoords[1] = config.getInt("jail.y", 0);
-        jailCoords[2] = config.getInt("jail.z", 0);
-        unjailCoords[0] = config.getInt("unjail.x", 0);
-        unjailCoords[1] = config.getInt("unjail.y", 0);
-        unjailCoords[2] = config.getInt("unjail.z", 0);
+        // Configuration config = this.getConfiguration();
+        YamlConfiguration config = (YamlConfiguration)this.getConfig();
+        jailLoc = new Location(
+                this.getServer().getWorld(config.getString("jail.world", this.getServer().getWorlds().get(0).getName())),
+                config.getInt("jail.x", 0),
+                config.getInt("jail.y", 0),
+                config.getInt("jail.z", 0));
+        unjailLoc = new Location(
+                this.getServer().getWorld(config.getString("unjail.world", this.getServer().getWorlds().get(0).getName())),
+                config.getInt("unjail.x", 0),
+                config.getInt("unjail.y", 0),
+                config.getInt("unjail.z", 0));
         jailGroup = config.getString("jailgroup", "Jailed");
-        config.save();
         
         File f = new File(this.getDataFolder().getPath() + File.separator + "jailed.yml");
         try {
             if(!f.exists()) f.createNewFile();
         } catch (IOException ex) {}
-        jailed = new Configuration(f);
-        jailed.load();
+        jailed = new YamlConfiguration();
+        
+        try {
+            config.save(this.getConfig().getCurrentPath());
+            jailed.load(f);
+        } catch (Exception ex) {
+        }
+        
+        
     }
     
     public void setupPermissions() {
@@ -322,17 +338,17 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public Location getJailLocation(Player player) {
-        return new Location(player.getWorld(), jailCoords[0], jailCoords[1], jailCoords[2]);
+        return jailLoc;
     }
     
     public boolean playerIsJailed(Player player) {
-        if (jailed.getProperty(player.getName().toLowerCase()) != null)
+        if (jailed.get(player.getName().toLowerCase()) != null)
             return true;
         return false;
     }
     
     public boolean playerIsTempJailed(Player player) {
-        if (jailed.getProperty(player.getName().toLowerCase() + ".tempTime") != null)
+        if (jailed.get(player.getName().toLowerCase() + ".tempTime") != null)
             return true;
         return false;
     }
@@ -347,9 +363,9 @@ public class SimpleJail extends JavaPlugin {
         else return true;
     }
     
-    public List<String> getGroups(Player player) {
+    public List<String> getGroups(String player) {
         if(bukkitPermissions != null) {
-            List<Group> groups = bukkitPermissions.getGroups(player.getName());
+            List<Group> groups = bukkitPermissions.getGroups(player);
             List<String> stringGroups = new ArrayList<String>();
             for (Group g : groups) {
                 stringGroups.add(g.getName());
@@ -367,20 +383,20 @@ public class SimpleJail extends JavaPlugin {
         return null;
     }
     
-    public void setGroup(Player player, String group) {
+    public void setGroup(String player, String group) {
         if (bukkitPermissions != null)
-            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + " " + group);
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player + " " + group);
         else if(pexPermissions != null)
             pexPermissions.getUser(player).setGroups(new String[] { group });
     }
     
-    public void setGroup(Player player, List<String> group) {
+    public void setGroup(String player, List<String> group) {
         if (bukkitPermissions != null) {
             String params = new String();
             for (String grp : group) {
                 params += " " + grp;
             }
-            this.getServer().dispatchCommand(console, "permissions player setgroup " + player.getName() + params);
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player + params);
         } else if(pexPermissions != null) {
             pexPermissions.getUser(player).setGroups(group.toArray(new String[0]));
         }
