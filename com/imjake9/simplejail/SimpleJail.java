@@ -127,11 +127,6 @@ public class SimpleJail extends JavaPlugin {
             return;
         }
         
-        // Move player into jail:
-        if (player != null)
-            player.teleport(jailLoc);
-        
-        // if (bukkitPermissions != null) {
         List<String> groupName = this.getGroups(args[0]);
         jailed.set(args[0] + ".groups", groupName);
         this.setGroup(args[0], jailGroup);
@@ -146,6 +141,12 @@ public class SimpleJail extends JavaPlugin {
             }
         }
         
+        // Move player into jail:
+        if (player != null)
+            player.teleport(jailLoc);
+        else
+            jailed.set("status", "pending");
+        
         this.saveJail();
         
         if (player != null) {
@@ -158,11 +159,6 @@ public class SimpleJail extends JavaPlugin {
     public void unjailPlayer(CommandSender sender, String[] args, boolean fromTempJail) {
         Player player = this.getServer().getPlayer(args[0]);
         
-        if(player == null) {
-            sender.sendMessage(ChatColor.RED + "Couldn't find player \"" + args[0] + ".");
-            return;
-        }
-        
         // Convert old jail entries:
         if (jailed.get(args[0] + ".groups") == null) {
             List<String> groups = jailed.getList(args[0], new ArrayList<String>());
@@ -170,7 +166,8 @@ public class SimpleJail extends JavaPlugin {
             jailed.set(args[0] + ".groups", groups);
         }
         
-        args[0] = player.getName().toLowerCase();
+        if (player != null)
+            args[0] = player.getName().toLowerCase();
         
         // Check if player is in jail:
         if(jailed.get(args[0]) == null) {
@@ -178,10 +175,16 @@ public class SimpleJail extends JavaPlugin {
             return;
         }
         
+        // Check if player is offline:
+        if (player == null) {
+            jailed.set("status", "freed");
+            sender.sendMessage(ChatColor.AQUA + "Player removed from jail.");
+            return;
+        }
+        
         // Move player out of jail:
         player.teleport(unjailLoc);
         
-        // if (bukkitPermissions != null) {
         this.setGroup(args[0], jailed.getList(args[0] + ".groups", new ArrayList()));
         
         jailed.set(args[0], null);
@@ -353,8 +356,12 @@ public class SimpleJail extends JavaPlugin {
         }
     }
     
-    public Location getJailLocation(Player player) {
+    public Location getJailLocation() {
         return jailLoc;
+    }
+    
+    public Location getUnjailLocation() {
+        return unjailLoc;
     }
     
     public boolean playerIsJailed(Player player) {
@@ -371,6 +378,10 @@ public class SimpleJail extends JavaPlugin {
     
     public double getTempJailTime(Player player) {
         return jailed.getDouble(player.getName().toLowerCase() + ".tempTime", -1);
+    }
+    
+    public JailStatus getPlayerStatus(Player player) {
+        return JailStatus.valueOf(jailed.getString("status", "jailed").toUpperCase());
     }
     
     public boolean hasPermission(CommandSender sender, String permission) {
@@ -448,5 +459,11 @@ public class SimpleJail extends JavaPlugin {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+    
+    public enum JailStatus {
+        JAILED,
+        PENDING,
+        FREED;
     }
 }

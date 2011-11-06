@@ -1,5 +1,6 @@
 package com.imjake9.simplejail;
 
+import com.imjake9.simplejail.SimpleJail.JailStatus;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -23,7 +24,7 @@ public class SimpleJailPlayerListener extends PlayerListener {
         
         if(!plugin.playerIsJailed(player)) return;
         
-        event.setRespawnLocation(plugin.getJailLocation(player));
+        event.setRespawnLocation(plugin.getJailLocation());
         
     }
     
@@ -31,30 +32,45 @@ public class SimpleJailPlayerListener extends PlayerListener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         
         final Player player = event.getPlayer();
+        JailStatus status = plugin.getPlayerStatus(player);
         
-        if(!plugin.playerIsJailed(player) || !plugin.playerIsTempJailed(player)) return;
-        
-        double tempTime = plugin.getTempJailTime(player);
-        long currentTime = System.currentTimeMillis();
-        
-        if (tempTime <= currentTime) {
-            plugin.unjailPlayer(plugin.console, new String[] {player.getName()}, true);
+        if(!plugin.playerIsJailed(player)) return;
+
+        if (plugin.playerIsTempJailed(player)) {
+
+            double tempTime = plugin.getTempJailTime(player);
+            long currentTime = System.currentTimeMillis();
+
+            if (tempTime <= currentTime) {
+                plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, true);
+            }
+            
         }
         
-        // If player is still jailed, send messages:
         if (!plugin.playerIsJailed(player)) return;
-        if (plugin.playerIsTempJailed(player)) {
-            int minutes = (int)((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
-            player.sendMessage(ChatColor.AQUA + "You are jailed for " + plugin.prettifyMinutes(minutes) + ".");
-        } else player.sendMessage(ChatColor.AQUA + "You are jailed.");
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+        
+        // If player is still jailed, check status:
+        if (status == JailStatus.PENDING) {
+            
+            if (plugin.playerIsTempJailed(player)) {
+                int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
+                player.sendMessage(ChatColor.AQUA + "You are jailed for " + plugin.prettifyMinutes(minutes) + ".");
+            } else {
+                player.sendMessage(ChatColor.AQUA + "You are jailed.");
+            }
+            player.teleport(plugin.getJailLocation());
+            
+        } else if (status == JailStatus.FREED) {
+            plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, false);
+        }
+        /* plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 
             @Override
             public void run() {
-                player.teleport(plugin.getJailLocation(player));
+                
             }
             
-        }, 60);
+        }, 60); */
         
     }
     
