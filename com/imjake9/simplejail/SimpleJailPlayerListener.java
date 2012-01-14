@@ -60,17 +60,10 @@ public class SimpleJailPlayerListener extends PlayerListener {
             }
             player.teleport(plugin.getJailLocation());
             
+            
         } else if (status == JailStatus.FREED) {
             plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, false);
         }
-        /* plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-
-            @Override
-            public void run() {
-                
-            }
-            
-        }, 60); */
         
     }
     

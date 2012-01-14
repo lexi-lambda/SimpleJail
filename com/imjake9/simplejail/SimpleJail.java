@@ -145,7 +145,7 @@ public class SimpleJail extends JavaPlugin {
         if (player != null)
             player.teleport(jailLoc);
         else
-            jailed.set("status", "pending");
+            jailed.set(args[0] + ".status", "pending");
         
         this.saveJail();
         
@@ -159,15 +159,7 @@ public class SimpleJail extends JavaPlugin {
     public void unjailPlayer(CommandSender sender, String[] args, boolean fromTempJail) {
         Player player = this.getServer().getPlayer(args[0]);
         
-        // Convert old jail entries:
-        if (jailed.get(args[0] + ".groups") == null) {
-            List<String> groups = jailed.getList(args[0], new ArrayList<String>());
-            jailed.set(args[0], null);
-            jailed.set(args[0] + ".groups", groups);
-        }
-        
-        if (player != null)
-            args[0] = player.getName().toLowerCase();
+        args[0] = (player == null) ? args[0].toLowerCase() : player.getName().toLowerCase();
         
         // Check if player is in jail:
         if(jailed.get(args[0]) == null) {
@@ -177,7 +169,7 @@ public class SimpleJail extends JavaPlugin {
         
         // Check if player is offline:
         if (player == null) {
-            jailed.set("status", "freed");
+            jailed.set(args[0] + ".status", "freed");
             sender.sendMessage(ChatColor.AQUA + "Player removed from jail.");
             return;
         }
@@ -185,7 +177,7 @@ public class SimpleJail extends JavaPlugin {
         // Move player out of jail:
         player.teleport(unjailLoc);
         
-        this.setGroup(args[0], jailed.getList(args[0] + ".groups", new ArrayList()));
+        this.setGroup(args[0], jailed.getStringList(args[0] + ".groups"));
         
         jailed.set(args[0], null);
         
@@ -381,7 +373,7 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public JailStatus getPlayerStatus(Player player) {
-        return JailStatus.valueOf(jailed.getString("status", "jailed").toUpperCase());
+        return JailStatus.valueOf(jailed.getString(player.getName().toLowerCase() + ".status", "jailed").toUpperCase());
     }
     
     public boolean hasPermission(CommandSender sender, String permission) {
