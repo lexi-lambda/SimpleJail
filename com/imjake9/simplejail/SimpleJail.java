@@ -413,9 +413,9 @@ public class SimpleJail extends JavaPlugin {
         if (bukkitPermissions != null) {
             String params = new String();
             for (String grp : group) {
-                params += " " + grp;
+                params += grp + ",";
             }
-            this.getServer().dispatchCommand(console, "permissions player setgroup " + player + params);
+            this.getServer().dispatchCommand(console, "permissions player setgroup " + player + " " + params);
         } else if(pexPermissions != null) {
             pexPermissions.getUser(player).setGroups(group.toArray(new String[0]));
         }
