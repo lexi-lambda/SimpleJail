@@ -1,5 +1,6 @@
 package com.imjake9.simplejail;
 
+import com.imjake9.simplejail.SimpleJail.JailMessage;
 import com.imjake9.simplejail.SimpleJail.JailStatus;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -54,9 +55,9 @@ public class SimpleJailPlayerListener extends PlayerListener {
             
             if (plugin.playerIsTempJailed(player)) {
                 int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
-                player.sendMessage(ChatColor.AQUA + "You are jailed for " + plugin.prettifyMinutes(minutes) + ".");
+                JailMessage.TEMPJAILED.send(player, plugin.prettifyMinutes(minutes));
             } else {
-                player.sendMessage(ChatColor.AQUA + "You are jailed.");
+                JailMessage.JAILED.send(player);
             }
             player.teleport(plugin.getJailLocation());
             
