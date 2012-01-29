@@ -1,5 +1,7 @@
 package com.imjake9.simplejail;
 
+import com.imjake9.simplejail.events.PlayerJailEvent;
+import com.imjake9.simplejail.events.PlayerUnjailEvent;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
@@ -7,12 +9,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -121,6 +120,17 @@ public class SimpleJail extends JavaPlugin {
         Player player = this.getServer().getPlayer(name);
         name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
         
+        // Dispatch event:
+        PlayerJailEvent e = new PlayerJailEvent(name, jailLoc, time);
+        this.getServer().getPluginManager().callEvent(e);
+        
+        // If event cancelled, take no action:
+        if (e.isCancelled())
+            return;
+        
+        // Update time to event result
+        time = e.getLength();
+        
         // Check if player is slready jailed:
         if(jailed.get(name) != null) {
             throw new JailException("Jailed player was sent jail message.", JailMessage.ALREADY_IN_JAIL.message(name));
@@ -139,7 +149,7 @@ public class SimpleJail extends JavaPlugin {
         
         // Move player into jail:
         if (player != null)
-            player.teleport(jailLoc);
+            player.teleport(e.getJailLocation());
         else
             jailed.set(name + ".status", "pending");
         
@@ -168,6 +178,14 @@ public class SimpleJail extends JavaPlugin {
         Player player = this.getServer().getPlayer(name);
         name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
         
+        // Dispatch event
+        PlayerUnjailEvent e = new PlayerUnjailEvent(name, unjailLoc);
+        this.getServer().getPluginManager().callEvent(e);
+        
+        // If event cancelled, take no action:
+        if (e.isCancelled())
+            return;
+        
         // Check if player is in jail:
         if(jailed.get(name) == null) {
             throw new JailException("Player not in jail was sent unjail message.", JailMessage.NOT_IN_JAIL.message(name));
@@ -180,7 +198,7 @@ public class SimpleJail extends JavaPlugin {
         }
         
         // Move player out of jail:
-        player.teleport(unjailLoc);
+        player.teleport(e.getUnjailLocation());
         
         this.setGroups(name, jailed.getStringList(name + ".groups"));
         
@@ -303,6 +321,106 @@ public class SimpleJail extends JavaPlugin {
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
+    }
+    
+    /**
+     * Sets a custom value for a jailed player. If the player is
+     * not in jail, nothing will happen.
+     * 
+     * @param player
+     * @param node
+     * @param value 
+     */
+    public void setJailParameter(Player player, String node, String value) {
+        this.setJailParameter(player.getName(), node, value);
+    }
+    
+    /**
+     * Sets a custom value for a jailed player. If the player is
+     * not in jail, nothing will happen.
+     * 
+     * @param player
+     * @param node
+     * @param value 
+     */
+    public void setJailParameter(String player, String node, String value) {
+        if (!this.playerIsJailed(player)) return;
+        jailed.set(player.toLowerCase() + "." + node, value);
+    }
+    
+    /**
+     * Sets a custom value for a jailed player. If the player is
+     * not in jail, nothing will happen.
+     * 
+     * @param player
+     * @param node
+     * @param value 
+     */
+    public void setJailParameter(Player player, String node, int value) {
+        this.setJailParameter(player.getName(), node, value);
+    }
+    
+    /**
+     * Sets a custom value for a jailed player. If the player is
+     * not in jail, nothing will happen.
+     * 
+     * @param player
+     * @param node
+     * @param value 
+     */
+    public void setJailParameter(String player, String node, int value) {
+        if (!this.playerIsJailed(player)) return;
+        jailed.set(player.toLowerCase() + "." + node, value);
+    }
+    
+    /**
+     * Gets a custom string value associated with a jailed player.
+     * If the player is not in jail, it will return null.
+     * 
+     * @param player
+     * @param node
+     * @return 
+     */
+    public String getJailString(Player player, String node) {
+        return this.getJailString(player.getName(), node);
+    }
+    
+    /**
+     * Gets a custom string value associated with a jailed player.
+     * If the player is not in jail, it will return null.
+     * 
+     * @param player
+     * @param node
+     * @return 
+     */
+    public String getJailString(String player, String node) {
+        if (!this.playerIsJailed(player)) return null;
+        return jailed.getString(player.toLowerCase() + "." + node, null);
+    }
+    
+    /**
+     * Gets a custom string value associated with a jailed player.
+     * If the player is not in jail, it will return -1.
+     * 
+     * @param player
+     * @param node
+     * @return 
+     */
+    public int getJailInt(Player player, String node) {
+        return this.getJailInt(player.getName(), node);
+    }
+    
+    /**
+     * Gets a custom string value associated with a jailed player.
+     * If the player is not in jail, it will return -1.
+     * 
+     * @param player
+     * @param node
+     * @return 
+     */
+    public int getJailInt(String player, String node) {
+        if (!this.playerIsJailed(player)) return -1;
+        return jailed.getInt(player.toLowerCase() + "." + node, -1);
     }
     
     /**
