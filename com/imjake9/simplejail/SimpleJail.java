@@ -5,6 +5,7 @@ import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -142,7 +143,7 @@ public class SimpleJail extends JavaPlugin {
         
         List<String> groupName = this.getGroups(args[0]);
         jailed.set(args[0] + ".groups", groupName);
-        this.setGroup(args[0], jailGroup);
+        this.setGroups(args[0], Arrays.asList(new String[]{jailGroup}));
         
         int minutes = 0;
         
@@ -191,7 +192,7 @@ public class SimpleJail extends JavaPlugin {
         // Move player out of jail:
         player.teleport(unjailLoc);
         
-        this.setGroup(args[0], jailed.getStringList(args[0] + ".groups"));
+        this.setGroups(args[0], jailed.getStringList(args[0] + ".groups"));
         
         jailed.set(args[0], null);
         
@@ -361,53 +362,177 @@ public class SimpleJail extends JavaPlugin {
         }
     }
     
+    /**
+     * Returns the location set to be the jail.
+     * 
+     * @return jail location
+     */
     public Location getJailLocation() {
         return jailLoc;
     }
     
+    /**
+     * Returns the location set to be the unjail point.
+     * 
+     * @return unjail location
+     */
     public Location getUnjailLocation() {
         return unjailLoc;
     }
     
+    /**
+     * Returns true if the player is in jail.
+     * 
+     * Does not take status into account, so even if a player is freed,
+     * this will still return true.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public boolean playerIsJailed(Player player) {
-        if (jailed.get(player.getName().toLowerCase()) != null)
+        return this.playerIsJailed(player.getName());
+    }
+    
+    /**
+     * Returns true if the player is in jail.
+     * 
+     * Does not take status into account, so even if a player is freed,
+     * this will still return true.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
+    public boolean playerIsJailed(String player) {
+        if (jailed.get(player.toLowerCase()) != null)
             return true;
         return false;
     }
     
+    /**
+     * Returns true if the player is unjailed and has a set
+     * time limit for unjail.
+     * 
+     * Does not take status into account, so even if a player is freed,
+     * this will still return true.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public boolean playerIsTempJailed(Player player) {
-        if (jailed.get(player.getName().toLowerCase() + ".tempTime") != null)
+        return this.playerIsTempJailed(player.getName());
+    }
+    
+    /**
+     * Returns true if the player is unjailed and has a set
+     * time limit for unjail.
+     * 
+     * Does not take status into account, so even if a player is freed,
+     * this will still return true.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
+    public boolean playerIsTempJailed(String player) {
+        if (!this.playerIsJailed(player))
+            return false;
+        if (jailed.get(player.toLowerCase() + ".tempTime") != null)
             return true;
         return false;
     }
     
+    /**
+     * Gets the time in milliseconds (based on System.getCurrentTimeMillis())
+     * when a player should be unjailed.
+     * 
+     * This returns the time a player should be
+     * unjailed, not the time remaining. It returns -1
+     * if the player is not tempjailed.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public double getTempJailTime(Player player) {
-        return jailed.getDouble(player.getName().toLowerCase() + ".tempTime", -1);
+        return this.getTempJailTime(player.getName());
     }
     
+    /**
+     * Gets the time in milliseconds (based on System.getCurrentTimeMillis())
+     * when a player should be unjailed.
+     * 
+     * This returns the time a player should be
+     * unjailed, not the time remaining. It returns -1
+     * if the player is not tempjailed.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
+    public double getTempJailTime(String player) {
+        if (!this.playerIsJailed(player))
+            return -1;
+        return jailed.getDouble(player.toLowerCase() + ".tempTime", -1);
+    }
+    
+    /**
+     * Gets the current jailed status of a player.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public JailStatus getPlayerStatus(Player player) {
         return this.getPlayerStatus(player.getName());
     }
     
+    /**
+     * Gets the current jailed status of a player.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public JailStatus getPlayerStatus(String player) {
         return JailStatus.valueOf(jailed.getString(player.toLowerCase() + ".status", "jailed").toUpperCase());
     }
     
+    /**
+     * Sets the current jailed status of a player.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public void setPlayerStatus (Player player, JailStatus status) {
         this.setPlayerStatus(player.getName(), status);
     }
     
+    /**
+     * Sets the current jailed status of a player.
+     * 
+     * @param player the player to check for
+     * @return 
+     */
     public void setPlayerStatus(String player, JailStatus status) {
         jailed.set(player.toLowerCase() + ".status", status);
     }
     
+    /**
+     * Checks any CommandSender for a permission node.
+     * 
+     * @param sender
+     * @param permission
+     * @return 
+     */
     public boolean hasPermission(CommandSender sender, String permission) {
         if (sender instanceof Player)
             return sender.hasPermission(permission);
         else return true;
     }
     
-    public List<String> getGroups(String player) {
+    /**
+     * Gets the groups of a particular player. Works for all
+     * supported permissions plugins.
+     * 
+     * @param player
+     * @return 
+     */
+    private List<String> getGroups(String player) {
         if(bukkitPermissions != null) {
             List<Group> groups = bukkitPermissions.getGroups(player);
             List<String> stringGroups = new ArrayList<String>();
@@ -427,14 +552,14 @@ public class SimpleJail extends JavaPlugin {
         return null;
     }
     
-    public void setGroup(String player, String group) {
-        if (bukkitPermissions != null)
-            this.getServer().dispatchCommand(console, "permissions player setgroup " + player + " " + group);
-        else if(pexPermissions != null)
-            pexPermissions.getUser(player).setGroups(new String[] { group });
-    }
-    
-    public void setGroup(String player, List<String> group) {
+    /**
+     * Sets the groups for any player. Works with
+     * all supported permissions plugins.
+     * 
+     * @param player
+     * @param group 
+     */
+    private void setGroups(String player, List<String> group) {
         if (bukkitPermissions != null) {
             String params = new String();
             for (String grp : group) {
@@ -446,6 +571,12 @@ public class SimpleJail extends JavaPlugin {
         }
     }
     
+    /**
+     * Converts a number of minutes to a human-readable string.
+     * 
+     * @param minutes
+     * @return 
+     */
     public String prettifyMinutes(int minutes) {
         if (minutes == 1) return "one minute";
         if (minutes < 60) return minutes + " minutes";
@@ -458,6 +589,14 @@ public class SimpleJail extends JavaPlugin {
         return h + "h" + m + "m";
     }
     
+    /**
+     * Converts a human-readable string to a number of minutes.
+     * 
+     * Returns -1 if the string isn't parseable.
+     * 
+     * @param time
+     * @return 
+     */
     public int parseTimeString(String time) {
         if(!time.matches("[0-9]*h?[0-9]*m?")) return -1;
         if(time.matches("[0-9]+")) return Integer.parseInt(time);
@@ -470,6 +609,9 @@ public class SimpleJail extends JavaPlugin {
         return -1;
     }
     
+    /**
+     * Saves the jailed.yml.
+     */
     public void saveJail() {
         try {
             jailed.save(new File(this.getDataFolder().getPath() + File.separator + "jailed.yml"));
@@ -478,6 +620,9 @@ public class SimpleJail extends JavaPlugin {
         }
     }
     
+    /**
+     * Represents a player's jailed status.
+     */
     public enum JailStatus {
         JAILED,
         PENDING,
@@ -489,6 +634,9 @@ public class SimpleJail extends JavaPlugin {
         }
     }
     
+    /**
+     * Manages various SimpleJail messages.
+     */
     public enum JailMessage {
         PERMISSIONS_NOT_FOUND ("ERROR: Could not find permissions plugin."),
         LACKS_PERMISSIONS (ChatColor.RED + "You don't have permission to use that command (%1)."),
