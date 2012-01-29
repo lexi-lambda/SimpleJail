@@ -386,7 +386,19 @@ public class SimpleJail extends JavaPlugin {
     }
     
     public JailStatus getPlayerStatus(Player player) {
-        return JailStatus.valueOf(jailed.getString(player.getName().toLowerCase() + ".status", "jailed").toUpperCase());
+        return this.getPlayerStatus(player.getName());
+    }
+    
+    public JailStatus getPlayerStatus(String player) {
+        return JailStatus.valueOf(jailed.getString(player.toLowerCase() + ".status", "jailed").toUpperCase());
+    }
+    
+    public void setPlayerStatus (Player player, JailStatus status) {
+        this.setPlayerStatus(player.getName(), status);
+    }
+    
+    public void setPlayerStatus(String player, JailStatus status) {
+        jailed.set(player.toLowerCase() + ".status", status);
     }
     
     public boolean hasPermission(CommandSender sender, String permission) {
@@ -470,6 +482,11 @@ public class SimpleJail extends JavaPlugin {
         JAILED,
         PENDING,
         FREED;
+        
+        @Override
+        public String toString() {
+            return this.name().toLowerCase();
+        }
     }
     
     public enum JailMessage {
@@ -491,7 +508,8 @@ public class SimpleJail extends JavaPlugin {
         INVALID_COORDINATE (ChatColor.RED + "Invalid coordinate."),
         MUST_SPECIFY_TARGET (ChatColor.RED + "You must specify a player."),
         PLAYER_NOT_FOUND (ChatColor.RED + "Couldn't find player '%1'."),
-        JAIL_TIME (ChatColor.AQUA + "Remaining jail time: %1.");
+        JAIL_TIME (ChatColor.AQUA + "Remaining jail time: %1."),
+        PLAYER_IS_JAILED(ChatColor.AQUA + "You are jailed.");
         
         private String format;
         

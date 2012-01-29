@@ -37,30 +37,39 @@ public class SimpleJailPlayerListener implements Listener {
         
         if(!plugin.playerIsJailed(player)) return;
 
-        if (plugin.playerIsTempJailed(player)) {
+        if (plugin.playerIsTempJailed(player) && status != JailStatus.PENDING) {
 
             double tempTime = plugin.getTempJailTime(player);
             long currentTime = System.currentTimeMillis();
 
             if (tempTime <= currentTime) {
                 plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, true);
+                return;
             }
             
         }
         
-        if (!plugin.playerIsJailed(player)) return;
-        
         // If player is still jailed, check status:
-        if (status == JailStatus.PENDING) {
+        if (status == JailStatus.JAILED) {
             
+            JailMessage.PLAYER_IS_JAILED.send(player);
+            if(plugin.playerIsTempJailed(player)) {
+                int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
+                JailMessage.JAIL_TIME.send(player, plugin.prettifyMinutes(minutes));
+            }
+            
+        } else if (status == JailStatus.PENDING) {
+            
+            player.teleport(plugin.getJailLocation());
+            plugin.setPlayerStatus(player, JailStatus.JAILED);
+            
+            // Send message
             if (plugin.playerIsTempJailed(player)) {
                 int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
                 JailMessage.TEMPJAILED.send(player, plugin.prettifyMinutes(minutes));
             } else {
                 JailMessage.JAILED.send(player);
             }
-            player.teleport(plugin.getJailLocation());
-            
             
         } else if (status == JailStatus.FREED) {
             plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, false);
