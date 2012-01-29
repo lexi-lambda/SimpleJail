@@ -86,58 +86,47 @@ public class SimpleJail extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
         
-        if(commandLabel.equalsIgnoreCase("jail") && (args.length == 1 || args.length == 2)) {
-            if(!hasPermission(sender, "SimpleJail.jail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.jail");
+        if(commandLabel.equalsIgnoreCase("jail")) {
+            if(!hasPermission(sender, "simplejail.jail")) {
+                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jail");
                 return true;
             }
+            if (args.length != 1 && args.length != 2) return false;
             this.jailPlayer(sender, args);
             return true;
-        } else if(commandLabel.equalsIgnoreCase("unjail") && args.length == 1) {
-            if(!hasPermission(sender, "SimpleJail.unjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.unjail");
+        } else if(commandLabel.equalsIgnoreCase("unjail")) {
+            if(!hasPermission(sender, "simplejail.unjail")) {
+                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.unjail");
                 return true;
             }
+            if (args.length != 1) return false;
             this.unjailPlayer(sender, args);
             return true;
-        } else if(commandLabel.equalsIgnoreCase("setjail") && (args.length == 0 || args.length == 4)) {
-            if(!hasPermission(sender, "SimpleJail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.setjail");
+        } else if(commandLabel.equalsIgnoreCase("setjail")) {
+            if(!hasPermission(sender, "simplejail.setjail")) {
+                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.setjail");
                 return true;
             }
+            if (args.length != 0 && args.length != 4) return false;
             this.setJail(sender, args);
             return true;
-        } else if(commandLabel.equalsIgnoreCase("setunjail") && (args.length == 0 || args.length == 4)) {
-            if(!hasPermission(sender, "SimpleJail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.setjail");
+        } else if(commandLabel.equalsIgnoreCase("setunjail")) {
+            if(!hasPermission(sender, "simplejail.setjail")) {
+                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.setjail");
                 return true;
             }
+            if (args.length != 0 && args.length != 4) return false;
             this.setUnjail(sender, args);
             return true;
-        } else if(commandLabel.equalsIgnoreCase("jailtime") && args.length <= 1) {
-            if(!hasPermission(sender, "SimpleJail.jailtime")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.jailtime");
+        } else if(commandLabel.equalsIgnoreCase("jailtime")) {
+            if(!hasPermission(sender, "simplejail.jailtime")) {
+                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jailtime");
                 return true;
             }
+            if (args.length > 1) return false;
             this.jailTime(sender, args);
             return true;
         } else {
-            if(!hasPermission(sender, "SimpleJail.jail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.jail");
-                return true;
-            }
-            if(!hasPermission(sender, "SimpleJail.unjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.unjail");
-                return true;
-            }
-            if(!hasPermission(sender, "SimpleJail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.setjail");
-                return true;
-            }
-            if(!hasPermission(sender, "SimpleJail.jailtime")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "SimpleJail.jailtime");
-                return true;
-            }
             return false;
         }
         

@@ -1,7 +1,7 @@
 name: SimpleJail
 main: com.imjake9.simplejail.SimpleJail
 description: Very basic Jail plugin.
-version: 1.7.3
+version: 1.7.4
 author: imjake9
 softdepend: [PermissionsBukkit, PermissionsEX]
 
@@ -31,13 +31,13 @@ commands:
            /<command> <player>
 
 permissions:
-  SimpleJail.jailtime:
+  simplejail.jailtime:
     description: Gives access to the jailtime command.
     default: true
-  SimpleJail.*:
+  simplejail.*:
     description: Gives access to all SimpleJail commands.
     children:
-      SimpleJail.jail: true
-      SimpleJail.unjail: true
-      SimpleJail.setjail: true
-      SimpleJail.jailtime: true
+      simplejail.jail: true
+      simplejail.unjail: true
+      simplejail.setjail: true
+      simplejail.jailtime: true
