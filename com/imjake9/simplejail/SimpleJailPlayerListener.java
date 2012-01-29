@@ -3,11 +3,12 @@ package com.imjake9.simplejail;
 import com.imjake9.simplejail.SimpleJail.JailMessage;
 import com.imjake9.simplejail.SimpleJail.JailStatus;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-public class SimpleJailPlayerListener extends PlayerListener {
+public class SimpleJailPlayerListener implements Listener {
     
     private SimpleJail plugin;
     
@@ -17,8 +18,8 @@ public class SimpleJailPlayerListener extends PlayerListener {
         
     }
     
-    @Override
-    public void onPlayerRespawn(PlayerRespawnEvent event) {
+    @EventHandler
+    public void onPlayerRespawn(final PlayerRespawnEvent event) {
         
         Player player = event.getPlayer();
         
@@ -28,8 +29,8 @@ public class SimpleJailPlayerListener extends PlayerListener {
         
     }
     
-    @Override
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    @EventHandler
+    public void onPlayerJoin(final PlayerJoinEvent event) {
         
         final Player player = event.getPlayer();
         JailStatus status = plugin.getPlayerStatus(player);

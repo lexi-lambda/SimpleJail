@@ -15,8 +15,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.tehkode.permissions.PermissionGroup;
@@ -54,8 +52,7 @@ public class SimpleJail extends JavaPlugin {
         if(!this.isEnabled()) return;
         
         listener = new SimpleJailPlayerListener(this);
-        this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, listener, Priority.High, this);
-        this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_JOIN, listener, Priority.Normal, this);
+        this.getServer().getPluginManager().registerEvents(listener, this);
         
         this.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
 
