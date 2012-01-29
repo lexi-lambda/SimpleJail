@@ -2,6 +2,8 @@ package com.imjake9.simplejail;
 
 import com.imjake9.simplejail.SimpleJail.JailMessage;
 import com.imjake9.simplejail.SimpleJail.JailStatus;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,7 +12,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 
 public class SimpleJailPlayerListener implements Listener {
     
-    private SimpleJail plugin;
+    private final SimpleJail plugin;
     
     public SimpleJailPlayerListener(SimpleJail plugin) {
         
@@ -43,7 +45,14 @@ public class SimpleJailPlayerListener implements Listener {
             long currentTime = System.currentTimeMillis();
 
             if (tempTime <= currentTime) {
-                plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, true);
+                try {
+                    plugin.unjailPlayer(player.getName());
+                } catch (JailException ex) {
+                    // Should never happen
+                    ex.printStackTrace();
+                    return;
+                }
+                JailMessage.UNTEMPJAILED.print(player.getName());
                 return;
             }
             
@@ -72,7 +81,12 @@ public class SimpleJailPlayerListener implements Listener {
             }
             
         } else if (status == JailStatus.FREED) {
-            plugin.unjailPlayer(plugin.console, new String[]{player.getName()}, false);
+            try {
+                plugin.unjailPlayer(player.getName());
+            } catch (JailException ex) {
+                // Should never happen
+                ex.printStackTrace();
+            }
         }
         
     }

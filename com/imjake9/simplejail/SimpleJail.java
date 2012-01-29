@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -33,6 +34,7 @@ public class SimpleJail extends JavaPlugin {
     private String jailGroup;
     private YamlConfiguration jailed;
     private SimpleJailPlayerListener listener;
+    private SimpleJailCommandHandler handler;
     
     @Override
     public void onDisable() {
@@ -52,8 +54,11 @@ public class SimpleJail extends JavaPlugin {
         this.setupPermissions();
         if(!this.isEnabled()) return;
         
+        // Set up handlers
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvents(listener, this);
+        
+        handler = new SimpleJailCommandHandler(this);
         
         this.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
 
@@ -69,7 +74,13 @@ public class SimpleJail extends JavaPlugin {
                     double tempTime = getTempJailTime(p);
 
                     if (tempTime <= currentTime) {
-                        unjailPlayer(console, new String[]{p.getName()}, true);
+                        try {
+                            unjailPlayer(p.getName());
+                        } catch (JailException ex) {
+                            // Should never happen
+                            ex.printStackTrace();
+                        }
+                        JailMessage.UNTEMPJAILED.print(p.getName());
                     }
                     
                 }
@@ -81,151 +92,114 @@ public class SimpleJail extends JavaPlugin {
         log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() + " enabled.");
     }
     
-    @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-        
-        if(commandLabel.equalsIgnoreCase("jail")) {
-            if(!hasPermission(sender, "simplejail.jail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jail");
-                return true;
-            }
-            if (args.length != 1 && args.length != 2) return false;
-            this.jailPlayer(sender, args);
-            return true;
-        } else if(commandLabel.equalsIgnoreCase("unjail")) {
-            if(!hasPermission(sender, "simplejail.unjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.unjail");
-                return true;
-            }
-            if (args.length != 1) return false;
-            this.unjailPlayer(sender, args);
-            return true;
-        } else if(commandLabel.equalsIgnoreCase("setjail")) {
-            if(!hasPermission(sender, "simplejail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.setjail");
-                return true;
-            }
-            if (args.length != 0 && args.length != 4) return false;
-            this.setJail(sender, args);
-            return true;
-        } else if(commandLabel.equalsIgnoreCase("setunjail")) {
-            if(!hasPermission(sender, "simplejail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.setjail");
-                return true;
-            }
-            if (args.length != 0 && args.length != 4) return false;
-            this.setUnjail(sender, args);
-            return true;
-        } else if(commandLabel.equalsIgnoreCase("jailtime")) {
-            if(!hasPermission(sender, "simplejail.jailtime")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jailtime");
-                return true;
-            }
-            if (args.length > 1) return false;
-            this.jailTime(sender, args);
-            return true;
-        } else {
-            return false;
-        }
-        
+    /**
+     * Sends a player to jail.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param name
+     * @throws JailException 
+     */
+    public void jailPlayer(String name) throws JailException {
+        this.jailPlayer(name, -1);
     }
     
-    public void jailPlayer(CommandSender sender, String[] args) {
-        Player player = this.getServer().getPlayer(args[0]);
+    /**
+     * Sends a player to jail for a specific time.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param name
+     * @param time time in minutes
+     * @throws JailException 
+     */
+    public void jailPlayer(String name, int time) throws JailException {
         
-        args[0] = (player == null) ? args[0].toLowerCase() : player.getName().toLowerCase();
+        // Autocomplete name if player is online:
+        Player player = this.getServer().getPlayer(name);
+        name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Check if player is slready jailed:
-        if(jailed.get(args[0]) != null) {
-            JailMessage.ALREADY_IN_JAIL.send(sender, args[0]);
-            return;
+        if(jailed.get(name) != null) {
+            throw new JailException("Jailed player was sent jail message.", JailMessage.ALREADY_IN_JAIL.message(name));
         }
         
-        List<String> groupName = this.getGroups(args[0]);
-        jailed.set(args[0] + ".groups", groupName);
-        this.setGroups(args[0], Arrays.asList(new String[]{jailGroup}));
+        // Put player in jailed group:
+        List<String> groupName = this.getGroups(name);
+        jailed.set(name + ".groups", groupName);
+        this.setGroups(name, Arrays.asList(new String[]{jailGroup}));
         
-        int minutes = 0;
-        
-        if(args.length == 2) {
-            minutes = this.parseTimeString(args[1]);
-            if(minutes != -1) {
-                double tempTime = System.currentTimeMillis() + (minutes * 60000);
-                jailed.set(args[0] + ".tempTime", tempTime);
-            }
+        // If tempjailing, set up tempjail time:
+        if (time > 0) {
+            double tempTime = System.currentTimeMillis() + (time * 60000);
+           jailed.set(name + ".tempTime", tempTime);
         }
         
         // Move player into jail:
         if (player != null)
             player.teleport(jailLoc);
         else
-            jailed.set(args[0] + ".status", "pending");
+            jailed.set(name + ".status", "pending");
         
         this.saveJail();
         
+        // Send message to player
         if (player != null) {
-            if(args.length == 1 || minutes == -1) JailMessage.JAILED.send(player);
-            else JailMessage.TEMPJAILED.send(player, this.prettifyMinutes(minutes));
+            if(time <= 0) JailMessage.JAILED.send(player);
+            else JailMessage.TEMPJAILED.send(player, this.prettifyMinutes(time));
         }
-        if (args.length == 1 || minutes == -1) JailMessage.JAIL.send(sender, args[0]);
-        else JailMessage.TEMPJAIL.send(sender, args[0], this.prettifyMinutes(minutes));
+        
     }
     
-    public void unjailPlayer(CommandSender sender, String[] args, boolean fromTempJail) {
-        Player player = this.getServer().getPlayer(args[0]);
+    /**
+     * Removes a player from jail.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param name
+     * @throws JailException 
+     */
+    public void unjailPlayer(String name) throws JailException {
         
-        args[0] = (player == null) ? args[0].toLowerCase() : player.getName().toLowerCase();
+        // Autocomplete name if player is online:
+        Player player = this.getServer().getPlayer(name);
+        name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Check if player is in jail:
-        if(jailed.get(args[0]) == null) {
-            JailMessage.NOT_IN_JAIL.send(sender, args[0]);
-            return;
+        if(jailed.get(name) == null) {
+            throw new JailException("Player not in jail was sent unjail message.", JailMessage.NOT_IN_JAIL.message(name));
         }
         
         // Check if player is offline:
         if (player == null) {
-            jailed.set(args[0] + ".status", "freed");
-            JailMessage.UNJAIL.send(sender, args[0]);
+            jailed.set(name + ".status", "freed");
             return;
         }
         
         // Move player out of jail:
         player.teleport(unjailLoc);
         
-        this.setGroups(args[0], jailed.getStringList(args[0] + ".groups"));
+        this.setGroups(name, jailed.getStringList(name + ".groups"));
         
-        jailed.set(args[0], null);
+        jailed.set(name, null);
         
         this.saveJail();
         
         JailMessage.UNJAILED.send(player);
-        if (fromTempJail) JailMessage.UNTEMPJAILED.print(args[0]);
-        else JailMessage.UNJAIL.send(sender, args[0]);
+        
     }
     
-    public void unjailPlayer(CommandSender sender, String[] args) {
-        this.unjailPlayer(sender, args, false);
-    }
-    
-    public void setJail(CommandSender sender, String[] args) {
-        if(!(sender instanceof Player) && args.length != 4) {
-            JailMessage.ONLY_PLAYERS.send(sender);
-            return;
-        }
-        if(args.length == 0) {
-            Player player = (Player)sender;
-            jailLoc = player.getLocation();
-        } else {
-            if(!(new Scanner(args[0]).hasNextInt()) || !(new Scanner(args[1]).hasNextInt()) || !(new Scanner(args[2]).hasNextInt())) {
-                JailMessage.INVALID_COORDINATE.send(sender);
-                return;
-            }
-            jailLoc = new Location(
-                    this.getServer().getWorld(args[3]),
-                    Integer.parseInt(args[0]),
-                    Integer.parseInt(args[1]),
-                    Integer.parseInt(args[2]));
-        }
+    /**
+     * Sets the jail point.
+     * 
+     * @param loc 
+     */
+    public void setJail(Location loc) {
+        
+        jailLoc = loc;
         
         YamlConfiguration config = (YamlConfiguration) this.getConfig();
         config.set("jail.x", (int) jailLoc.getX());
@@ -235,28 +209,16 @@ public class SimpleJail extends JavaPlugin {
         
         this.saveConfig();
         
-        JailMessage.JAIL_POINT_SET.send(sender);
     }
     
-    public void setUnjail(CommandSender sender, String[] args) {
-        if(!(sender instanceof Player) && args.length != 4) {
-            JailMessage.ONLY_PLAYERS.send(sender);
-            return;
-        }
-        if(args.length == 0) {
-            Player player = (Player)sender;
-            unjailLoc = player.getLocation();
-        } else {
-            if(!(new Scanner(args[0]).hasNextInt()) || !(new Scanner(args[1]).hasNextInt()) || !(new Scanner(args[2]).hasNextInt())) {
-                JailMessage.INVALID_COORDINATE.send(sender);
-                return;
-            }
-            unjailLoc = new Location(
-                    this.getServer().getWorld(args[3]),
-                    Integer.parseInt(args[0]),
-                    Integer.parseInt(args[1]),
-                    Integer.parseInt(args[2]));
-        }
+    /**
+     * Sets the unjail point.
+     * 
+     * @param loc 
+     */
+    public void setUnjail(Location loc) {
+        
+        unjailLoc = loc;
         
         YamlConfiguration config = (YamlConfiguration) this.getConfig();
         config.set("unjail.x", (int) unjailLoc.getX());
@@ -266,28 +228,9 @@ public class SimpleJail extends JavaPlugin {
         
         this.saveConfig();
         
-        JailMessage.UNJAIL_POINT_SET.send(sender);
     }
     
-    public void jailTime(CommandSender sender, String[] args) {
-        if(!(sender instanceof Player) && args.length == 0) {
-            JailMessage.MUST_SPECIFY_TARGET.send(sender);
-            return;
-        }
-        Player player = (args.length == 0) ? (Player)sender : this.getServer().getPlayer(args[0]);
-        if(player == null) {
-            JailMessage.PLAYER_NOT_FOUND.send(sender, args[0]);
-            return;
-        }
-        if(!this.playerIsTempJailed(player)) {
-            JailMessage.NOT_TEMPJAILED.send(sender, (args.length == 0) ? sender.getName() : args[0]);
-            return;
-        }
-        int minutes = (int)((this.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
-        JailMessage.JAIL_TIME.send(sender, this.prettifyMinutes(minutes));
-    }
-    
-    public void loadConfig() {
+    private void loadConfig() {
         // Init config files:
         YamlConfiguration config = (YamlConfiguration) this.getConfig();
         config.options().copyDefaults(true);
@@ -335,7 +278,7 @@ public class SimpleJail extends JavaPlugin {
         
     }
     
-    public void setupPermissions() {
+    private void setupPermissions() {
         
         Plugin bukkit = this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
         Plugin pex = this.getServer().getPluginManager().getPlugin("PermissionsEx");
@@ -513,19 +456,6 @@ public class SimpleJail extends JavaPlugin {
     }
     
     /**
-     * Checks any CommandSender for a permission node.
-     * 
-     * @param sender
-     * @param permission
-     * @return 
-     */
-    public boolean hasPermission(CommandSender sender, String permission) {
-        if (sender instanceof Player)
-            return sender.hasPermission(permission);
-        else return true;
-    }
-    
-    /**
      * Gets the groups of a particular player. Works for all
      * supported permissions plugins.
      * 
@@ -666,6 +596,31 @@ public class SimpleJail extends JavaPlugin {
         }
         
         /**
+         * Gets the message as a String.
+         * 
+         * @return the message
+         */
+        String message() {
+            return format;
+        }
+        
+        /**
+         * Gets the message with arguments filled.
+         * 
+         * @param args list of arguments
+         * @return the message
+         */
+        String message(String... args) {
+            String message = format;
+            for(int i = 1; ; i++) {
+                if (message.indexOf("%" + i) > 0) {
+                    message = message.replaceAll("%" + i, args[i - 1]);
+                } else break;
+            }
+            return message;
+        }
+        
+        /**
          * Sends a message.
          * 
          * @param sender reciever
@@ -681,13 +636,7 @@ public class SimpleJail extends JavaPlugin {
          * @param args list of arguments
          */
         void send(CommandSender sender, String... args) {
-            String message = format;
-            for(int i = 1; ; i++) {
-                if (message.indexOf("%" + i) > 0) {
-                    message = message.replaceAll("%" + i, args[i - 1]);
-                } else break;
-            }
-            sender.sendMessage(message);
+            sender.sendMessage(message(args));
         }
         
         /**
@@ -704,13 +653,7 @@ public class SimpleJail extends JavaPlugin {
          * @param args 
          */
         void print(String... args) {
-            String message = format;
-            for(int i = 1; ; i++) {
-                if (message.indexOf("%" + i) > 0) {
-                    message = message.replaceAll("%" + i, args[i - 1]);
-                } else break;
-            }
-            log.info("[SimpleJail] " + message);
+            log.info("[SimpleJail] " + message(args));
         }
     }
 }
