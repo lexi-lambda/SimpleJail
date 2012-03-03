@@ -277,9 +277,10 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 }
             }
         }
-        for (SimpleJailCommandListener listener : commandListeners.get(Priority.MONITOR)) {
-            listener.handleJailCommand(sender, command, args);
-        }
+        if (commandListeners.containsKey(Priority.MONITOR))
+            for (SimpleJailCommandListener listener : commandListeners.get(Priority.MONITOR)) {
+                listener.handleJailCommand(sender, command, args);
+            }
         return handled;
     }
     
