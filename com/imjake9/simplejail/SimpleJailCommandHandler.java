@@ -1,6 +1,12 @@
 package com.imjake9.simplejail;
 
 import com.imjake9.simplejail.SimpleJail.JailMessage;
+import com.imjake9.simplejail.api.SimpleJailCommandListener;
+import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -11,6 +17,8 @@ import org.bukkit.entity.Player;
 public class SimpleJailCommandHandler implements CommandExecutor {
     
     private final SimpleJail plugin;
+    
+    private Map<Priority, List<SimpleJailCommandListener>> commandListeners = new EnumMap<Priority, List<SimpleJailCommandListener>>(Priority.class);
     
     public SimpleJailCommandHandler(SimpleJail plugin) {
         this.plugin = plugin;
@@ -35,6 +43,9 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jail");
                 return true;
             }
+            
+            if (this.dispatchCommandToListeners(sender, commandLabel, args))
+                return true;
             
             if (args.length != 1 && args.length != 2) return false;
             
@@ -71,6 +82,9 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.unjail");
                 return true;
             }
+            
+            if (this.dispatchCommandToListeners(sender, commandLabel, args))
+                return true;
             
             if (args.length != 1) return false;
             
@@ -241,6 +255,56 @@ public class SimpleJailCommandHandler implements CommandExecutor {
         if (sender instanceof Player)
             return sender.hasPermission(permission);
         else return true;
+    }
+    
+    /**
+     * Dispatches a particular command to all listeners, ordered by priority.
+     * 
+     * @param sender
+     * @param command
+     * @param args
+     * @return 
+     */
+    private boolean dispatchCommandToListeners(CommandSender sender, String command, String args[]) {
+        boolean handled = false;
+        execute:
+        for (Priority priority : commandListeners.keySet()) {
+            if (priority.equals(Priority.MONITOR)) break;
+            for (SimpleJailCommandListener listener : commandListeners.get(priority)) {
+                if (listener.handleJailCommand(sender, command, args)) {
+                    handled = true;
+                    break execute;
+                }
+            }
+        }
+        for (SimpleJailCommandListener listener : commandListeners.get(Priority.MONITOR)) {
+            listener.handleJailCommand(sender, command, args);
+        }
+        return handled;
+    }
+    
+    /**
+     * Registers a command listener.
+     * 
+     * @param listener
+     * @param priority 
+     */
+    public void addListener(SimpleJailCommandListener listener, Priority priority) {
+        if (!commandListeners.containsKey(priority))
+            commandListeners.put(priority, new ArrayList<SimpleJailCommandListener>());
+        commandListeners.get(priority).add(listener);
+    }
+    
+    /**
+     * Unregisters a command listener.
+     * 
+     * @param listener
+     * @param priority 
+     */
+    public void removeListener(SimpleJailCommandListener listener, Priority priority) {
+        if (!commandListeners.containsKey(priority)) return;
+        if (!commandListeners.get(priority).contains(listener)) return;
+        commandListeners.get(priority).remove(listener);
     }
     
 }

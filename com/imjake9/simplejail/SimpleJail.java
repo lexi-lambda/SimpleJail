@@ -1,5 +1,7 @@
 package com.imjake9.simplejail;
 
+import com.imjake9.simplejail.api.SimpleJailCommandListener;
+import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
 import com.imjake9.simplejail.events.PlayerJailEvent;
 import com.imjake9.simplejail.events.PlayerUnjailEvent;
 import com.platymuus.bukkit.permissions.Group;
@@ -25,6 +27,8 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
 public class SimpleJail extends JavaPlugin {
     
     private static final Logger log = Logger.getLogger("Minecraft");
+    private static SimpleJail plugin = null;
+    
     public ConsoleCommandSender console;
     private PermissionsPlugin bukkitPermissions;
     private PermissionManager pexPermissions;
@@ -35,13 +39,27 @@ public class SimpleJail extends JavaPlugin {
     private SimpleJailPlayerListener listener;
     private SimpleJailCommandHandler handler;
     
+    /**
+     * Gets an instance of the plugin. Returns null if not enabled.
+     * 
+     * @return 
+     */
+    public static SimpleJail getPlugin() {
+        return plugin;
+    }
+    
     @Override
     public void onDisable() {
+        // Remove instance
+        plugin = null;
         log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() +  " disabled.");
     }
 
     @Override
     public void onEnable() {
+        
+        // Register instance
+        plugin = this;
         
         // Get console:
         console = this.getServer().getConsoleSender();
@@ -101,7 +119,7 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public void jailPlayer(String name) throws JailException {
-        this.jailPlayer(name, -1);
+        this.jailPlayer(name, -1, jailLoc);
     }
     
     /**
@@ -115,13 +133,28 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public void jailPlayer(String name, int time) throws JailException {
+        this.jailPlayer(name, time, jailLoc);
+    }
+    
+    /**
+     * Sends a player to jail for a specific time and to a location.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param name
+     * @param time time in minutes
+     * @param loc
+     * @throws JailException 
+     */
+    public void jailPlayer(String name, int time, Location loc) throws JailException {
         
         // Autocomplete name if player is online:
         Player player = this.getServer().getPlayer(name);
         name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event:
-        PlayerJailEvent e = new PlayerJailEvent(name, jailLoc, time);
+        PlayerJailEvent e = new PlayerJailEvent(name, loc, time);
         this.getServer().getPluginManager().callEvent(e);
         
         // If event cancelled, take no action:
@@ -173,6 +206,20 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public void unjailPlayer(String name) throws JailException {
+        this.unjailPlayer(name, jailLoc);
+    }
+    
+    /**
+     * Removes a player from jail to a location.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param name
+     * @param location
+     * @throws JailException 
+     */
+    public void unjailPlayer(String name, Location loc) throws JailException {
         
         // Autocomplete name if player is online:
         Player player = this.getServer().getPlayer(name);
@@ -346,6 +393,7 @@ public class SimpleJail extends JavaPlugin {
     public void setJailParameter(String player, String node, String value) {
         if (!this.playerIsJailed(player)) return;
         jailed.set(player.toLowerCase() + "." + node, value);
+        this.saveJail();
     }
     
     /**
@@ -371,6 +419,7 @@ public class SimpleJail extends JavaPlugin {
     public void setJailParameter(String player, String node, int value) {
         if (!this.playerIsJailed(player)) return;
         jailed.set(player.toLowerCase() + "." + node, value);
+        this.saveJail();
     }
     
     /**
@@ -666,6 +715,26 @@ public class SimpleJail extends JavaPlugin {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+    
+    /**
+     * Registers a command listener.
+     * 
+     * @param listener
+     * @param priority 
+     */
+    public void registerCommandListener(SimpleJailCommandListener listener, Priority priority) {
+        handler.addListener(listener, priority);
+    }
+    
+    /**
+     * Unregisters a command listener.
+     * 
+     * @param listener
+     * @param priority 
+     */
+    public void unregisterCommandListener(SimpleJailCommandListener listener, Priority priority) {
+        handler.removeListener(listener, priority);
     }
     
     /**
