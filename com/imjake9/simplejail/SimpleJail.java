@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -19,6 +20,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.tehkode.permissions.PermissionGroup;
 import ru.tehkode.permissions.PermissionManager;
@@ -30,6 +32,7 @@ public class SimpleJail extends JavaPlugin {
     private static SimpleJail plugin = null;
     
     public ConsoleCommandSender console;
+    private Permission vaultPermissions;
     private PermissionsPlugin bukkitPermissions;
     private PermissionManager pexPermissions;
     private Location jailLoc;
@@ -347,18 +350,22 @@ public class SimpleJail extends JavaPlugin {
         
         Plugin bukkit = this.getServer().getPluginManager().getPlugin("PermissionsBukkit");
         Plugin pex = this.getServer().getPluginManager().getPlugin("PermissionsEx");
+        Plugin vault = this.getServer().getPluginManager().getPlugin("Vault");
         
         boolean permissionsLoaded = false;
         
-        if(bukkitPermissions == null){
-           if(bukkit != null){
-               bukkitPermissions = (PermissionsPlugin)bukkit;
-               permissionsLoaded = true;
-           }
+        if (bukkitPermissions == null && bukkit != null) {
+            bukkitPermissions = (PermissionsPlugin) bukkit;
+            permissionsLoaded = true;
         }
-        if (pexPermissions == null) {
-            if (pex != null) {
-                pexPermissions = PermissionsEx.getPermissionManager();
+        if (pexPermissions == null && pex != null) {
+            pexPermissions = PermissionsEx.getPermissionManager();
+            permissionsLoaded = true;
+        }
+        if (vaultPermissions == null && vault != null) {
+            RegisteredServiceProvider<Permission> rsp = this.getServer().getServicesManager().getRegistration(Permission.class);
+            if (rsp != null) {
+                vaultPermissions = rsp.getProvider();
                 permissionsLoaded = true;
             }
         }
@@ -644,6 +651,10 @@ public class SimpleJail extends JavaPlugin {
                 stringGroups.add(g.getName());
             }
             return stringGroups;
+        } else if (vaultPermissions != null) {
+            String[] groups = vaultPermissions.getPlayerGroups(jailLoc.getWorld(), player);
+            List<String> stringGroups = Arrays.asList(groups);
+            return stringGroups;
         }
         
         return null;
@@ -665,6 +676,14 @@ public class SimpleJail extends JavaPlugin {
             this.getServer().dispatchCommand(console, "permissions player setgroup " + player + " " + params);
         } else if(pexPermissions != null) {
             pexPermissions.getUser(player).setGroups(group.toArray(new String[0]));
+        } else if (vaultPermissions != null) {
+            String[] groups = vaultPermissions.getPlayerGroups(jailLoc.getWorld(), player);
+            for (String g : groups) {
+                vaultPermissions.playerRemoveGroup(jailLoc.getWorld(), player, g);
+            }
+            for (String g : group) {
+                vaultPermissions.playerAddGroup(jailLoc.getWorld(), player, g);
+            }
         }
     }
     
