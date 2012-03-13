@@ -626,7 +626,7 @@ public class SimpleJail extends JavaPlugin {
      * @return 
      */
     public void setPlayerStatus(String player, JailStatus status) {
-        jailed.set(player.toLowerCase() + ".status", status);
+        jailed.set(player.toLowerCase() + ".status", status.toString());
     }
     
     /**
