@@ -1,5 +1,6 @@
 package com.imjake9.simplejail.events;
 
+import com.imjake9.simplejail.api.JailInfo;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -8,30 +9,30 @@ public class PlayerJailEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
     
-    private final String player;
-    
     private int length;
     private Location jailLocation;
     
     private boolean cancelled = false;
     
-    public PlayerJailEvent(String player, Location jailLocation) {
-        this(player, jailLocation, -1);
+    private JailInfo info;
+    
+    public PlayerJailEvent(JailInfo info, Location jailLocation) {
+        this(info, jailLocation, -1);
     }
     
-    public PlayerJailEvent(String player, Location jailLocation, int length) {
-        this.player = player;
+    public PlayerJailEvent(JailInfo info, Location jailLocation, int length) {
+        this.info = info;
         this.jailLocation = jailLocation;
         this.length = length;
     }
     
     /**
-     * Gets the name of the player jailed.
+     * Gets the jail information.
      * 
      * @return 
      */
-    public String getPlayer() {
-        return this.player;
+    public JailInfo getInfo() {
+        return info;
     }
     
     /**

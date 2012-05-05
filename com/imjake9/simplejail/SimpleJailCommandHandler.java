@@ -54,10 +54,10 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 
                 // Jail/tempjail player:
                 if (args.length == 1) 
-                    plugin.jailPlayer(args[0]);
+                    plugin.jailPlayer(args[0], sender.getName());
                 else {
                     int time = plugin.parseTimeString(args[1]);
-                    plugin.jailPlayer(args[0], time);
+                    plugin.jailPlayer(args[0], sender.getName(), time);
                 }
                 
             } catch (JailException ex) {

@@ -1,5 +1,6 @@
 package com.imjake9.simplejail;
 
+import com.imjake9.simplejail.api.JailInfo;
 import com.imjake9.simplejail.api.SimpleJailCommandListener;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
 import com.imjake9.simplejail.events.PlayerJailEvent;
@@ -118,11 +119,12 @@ public class SimpleJail extends JavaPlugin {
      * Throws a JailException that contains a formatted message,
      * meant to be sent to a player.
      * 
-     * @param name
+     * @param jailee
+     * @param jailer
      * @throws JailException 
      */
-    public void jailPlayer(String name) throws JailException {
-        this.jailPlayer(name, -1, jailLoc);
+    public void jailPlayer(String jailee, String jailer) throws JailException {
+        this.jailPlayer(jailee, jailer, -1, jailLoc);
     }
     
     /**
@@ -131,12 +133,13 @@ public class SimpleJail extends JavaPlugin {
      * Throws a JailException that contains a formatted message,
      * meant to be sent to a player.
      * 
-     * @param name
+     * @param jailee
+     * @param jailer
      * @param time time in minutes
      * @throws JailException 
      */
-    public void jailPlayer(String name, int time) throws JailException {
-        this.jailPlayer(name, time, jailLoc);
+    public void jailPlayer(String jailee, String jailer, int time) throws JailException {
+        this.jailPlayer(jailee, jailer, time, jailLoc);
     }
     
     /**
@@ -145,19 +148,20 @@ public class SimpleJail extends JavaPlugin {
      * Throws a JailException that contains a formatted message,
      * meant to be sent to a player.
      * 
-     * @param name
+     * @param jailee
+     * @param jailer
      * @param time time in minutes
      * @param loc
      * @throws JailException 
      */
-    public void jailPlayer(String name, int time, Location loc) throws JailException {
+    public void jailPlayer(String jailee, String jailer, int time, Location loc) throws JailException {
         
         // Autocomplete name if player is online:
-        Player player = this.getServer().getPlayer(name);
-        name = player == null || !player.isOnline() ? name.toLowerCase() : player.getName().toLowerCase();
+        Player player = this.getServer().getPlayer(jailee);
+        jailee = player == null || !player.isOnline() ? jailee.toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event:
-        PlayerJailEvent e = new PlayerJailEvent(name, loc, time);
+        PlayerJailEvent e = new PlayerJailEvent(new JailInfo(jailee, jailer), loc, time);
         this.getServer().getPluginManager().callEvent(e);
         
         // If event cancelled, take no action:
@@ -168,26 +172,26 @@ public class SimpleJail extends JavaPlugin {
         time = e.getLength();
         
         // Check if player is slready jailed:
-        if(jailed.get(name) != null) {
-            throw new JailException("Jailed player was sent jail message.", JailMessage.ALREADY_IN_JAIL.message(name));
+        if(jailed.get(jailee) != null) {
+            throw new JailException("Jailed player was sent jail message.", JailMessage.ALREADY_IN_JAIL.message(jailee));
         }
         
         // Put player in jailed group:
-        List<String> groupName = this.getGroups(name);
-        jailed.set(name + ".groups", groupName);
-        this.setGroups(name, Arrays.asList(new String[]{jailGroup}));
+        List<String> groupName = this.getGroups(jailee);
+        jailed.set(jailee + ".groups", groupName);
+        this.setGroups(jailee, Arrays.asList(new String[]{jailGroup}));
         
         // If tempjailing, set up tempjail time:
         if (time > 0) {
             double tempTime = System.currentTimeMillis() + (time * 60000);
-           jailed.set(name + ".tempTime", tempTime);
+           jailed.set(jailee + ".tempTime", tempTime);
         }
         
         // Move player into jail:
         if (player != null)
             player.teleport(e.getJailLocation());
         else
-            jailed.set(name + ".status", "pending");
+            jailed.set(jailee + ".status", "pending");
         
         this.saveJail();
         
