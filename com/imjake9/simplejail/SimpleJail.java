@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.ChatColor;
@@ -193,6 +194,9 @@ public class SimpleJail extends JavaPlugin {
         else
             jailed.set(jailee + ".status", "pending");
         
+        jailed.set(jailee + ".jailer", e.getInfo().getJailer());
+        jailed.set(jailee + ".data", e.getInfo().getProperties());
+        
         this.saveJail();
         
         // Send message to player
@@ -233,7 +237,8 @@ public class SimpleJail extends JavaPlugin {
         name = player == null || !player.isOnline() ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event
-        PlayerUnjailEvent e = new PlayerUnjailEvent(name, unjailLoc);
+        PlayerUnjailEvent e = new PlayerUnjailEvent(new JailInfo(name, jailed.getString(name + ".jailer")), unjailLoc);
+        e.getInfo().addProperties((Map<String, Object>) jailed.get(name + ".data"));
         this.getServer().getPluginManager().callEvent(e);
         
         // If event cancelled, take no action:

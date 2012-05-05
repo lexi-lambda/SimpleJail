@@ -12,9 +12,13 @@ public class JailInfo {
     protected Map<String, Object> jailData;
     
     public JailInfo(String jailer, String jailee) {
+        this(jailer, jailee, new HashMap<String, Object>());
+    }
+    
+    public JailInfo(String jailer, String jailee, Map<String,Object> jailData) {
         this.jailer = jailer;
         this.jailee = jailee;
-        jailData = new HashMap<String, Object>();
+        this.jailData = jailData;
     }
     
     public String getJailer() {
@@ -33,8 +37,16 @@ public class JailInfo {
         this.jailee = jailee;
     }
     
+    public Map<String, Object> getProperties() {
+        return jailData;
+    }
+    
     public Object getProperty(String key) {
         return jailData.get(key);
+    }
+    
+    public void addProperties(Map<String, Object> properties) {
+        jailData.putAll(properties);
     }
     
     public String getString(String key) {
