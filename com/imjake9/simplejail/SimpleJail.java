@@ -154,7 +154,7 @@ public class SimpleJail extends JavaPlugin {
         
         // Autocomplete name if player is online:
         Player player = this.getServer().getPlayer(name);
-        name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
+        name = player == null || !player.isOnline() ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event:
         PlayerJailEvent e = new PlayerJailEvent(name, loc, time);
@@ -226,7 +226,7 @@ public class SimpleJail extends JavaPlugin {
         
         // Autocomplete name if player is online:
         Player player = this.getServer().getPlayer(name);
-        name = player == null ? name.toLowerCase() : player.getName().toLowerCase();
+        name = player == null || !player.isOnline() ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event
         PlayerUnjailEvent e = new PlayerUnjailEvent(name, unjailLoc);
@@ -242,7 +242,7 @@ public class SimpleJail extends JavaPlugin {
         }
         
         // Check if player is offline:
-        if (player == null) {
+        if (player == null || !player.isOnline()) {
             jailed.set(name + ".status", "freed");
             return;
         }

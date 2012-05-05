@@ -222,7 +222,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             Player player = (args.length == 0) ? (Player) sender : plugin.getServer().getPlayer(args[0]);
             
             // Validate target:
-            if (player == null) {
+            if (player == null || !player.isOnline()) {
                 JailMessage.PLAYER_NOT_FOUND.send(sender, args[0]);
                 return true;
             }
