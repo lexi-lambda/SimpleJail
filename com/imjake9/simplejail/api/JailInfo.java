@@ -8,14 +8,12 @@ public class JailInfo {
     
     protected String jailer;
     protected String jailee;
-    protected JailType type;
     
     protected Map<String, Object> jailData;
     
-    public JailInfo(String jailer, String jailee, JailType type) {
+    public JailInfo(String jailer, String jailee) {
         this.jailer = jailer;
         this.jailee = jailee;
-        this.type = type;
         jailData = new HashMap<String, Object>();
     }
     
@@ -35,14 +33,6 @@ public class JailInfo {
         this.jailee = jailee;
     }
     
-    public JailType getType() {
-        return type;
-    }
-    
-    public void setType(JailType type) {
-        this.type = type;
-    }
-    
     public Object getProperty(String key) {
         return jailData.get(key);
     }
@@ -57,16 +47,6 @@ public class JailInfo {
     
     public void setProperty(String key, Object value) {
         jailData.put(key, value);
-    }
-    
-    public static enum SimpleJailType implements JailType {
-        JAIL,
-        UNJAIL;
-        
-        @Override
-        public String getName() {
-            return this.name();
-        }
     }
 
 }
