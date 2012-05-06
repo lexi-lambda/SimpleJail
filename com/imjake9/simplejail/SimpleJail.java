@@ -173,7 +173,7 @@ public class SimpleJail extends JavaPlugin {
         time = e.getLength();
         
         // Check if player is slready jailed:
-        if(jailed.get(jailee) != null) {
+        if(jailed.get(jailee) != null && getPlayerStatus(jailee) == JailStatus.JAILED) {
             throw new JailException("Jailed player was sent jail message.", JailMessage.ALREADY_IN_JAIL.message(jailee));
         }
         
