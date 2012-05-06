@@ -238,7 +238,8 @@ public class SimpleJail extends JavaPlugin {
         
         // Dispatch event
         PlayerUnjailEvent e = new PlayerUnjailEvent(new JailInfo(name, jailed.getString(name + ".jailer")), unjailLoc);
-        e.getInfo().addProperties((Map<String, Object>) jailed.get(name + ".data"));
+        if (jailed.getConfigurationSection(name + ".data") != null)
+            e.getInfo().addProperties(jailed.getConfigurationSection(name + ".data").getValues(true));
         this.getServer().getPluginManager().callEvent(e);
         
         // If event cancelled, take no action:
