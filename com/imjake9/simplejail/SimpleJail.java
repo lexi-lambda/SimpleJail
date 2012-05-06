@@ -189,7 +189,7 @@ public class SimpleJail extends JavaPlugin {
         }
         
         // Move player into jail:
-        if (player != null)
+        if (player != null && player.isOnline())
             player.teleport(e.getJailLocation());
         else
             jailed.set(jailee + ".status", "pending");
@@ -200,7 +200,7 @@ public class SimpleJail extends JavaPlugin {
         this.saveJail();
         
         // Send message to player
-        if (player != null) {
+        if (player != null && player.isOnline()) {
             if(time <= 0) JailMessage.JAILED.send(player);
             else JailMessage.TEMPJAILED.send(player, this.prettifyMinutes(time));
         }
