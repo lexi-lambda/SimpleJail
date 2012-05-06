@@ -50,13 +50,14 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             if (args.length != 1 && args.length != 2) return false;
             
             // Catch JailExceptions
+            int time = 0;
             try {
                 
                 // Jail/tempjail player:
                 if (args.length == 1) 
                     plugin.jailPlayer(args[0], sender.getName());
                 else {
-                    int time = plugin.parseTimeString(args[1]);
+                    time = plugin.parseTimeString(args[1]);
                     plugin.jailPlayer(args[0], sender.getName(), time);
                 }
                 
@@ -72,7 +73,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             if (args.length == 1)
                 JailMessage.JAIL.send(sender, args[0]);
             else
-                JailMessage.TEMPJAIL.send(sender, args[0], args[1]);
+                JailMessage.TEMPJAIL.send(sender, args[0], plugin.prettifyMinutes(time));
             
             return true;
             
