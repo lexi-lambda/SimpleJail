@@ -388,6 +388,23 @@ public class SimpleJail extends JavaPlugin {
     }
     
     /**
+     * Gets all jailed players.
+     * 
+     * Will only get players who are in the jailed.yml and are not freed via status.
+     * 
+     * @return list of player names
+     */
+    public List<String> getJailedPlayers() {
+        List<String> players = new ArrayList<String>();
+        for (String key : jailed.getKeys(false)) {
+            if (!playerIsJailed(key)) continue;
+            if (getPlayerStatus(key) == JailStatus.FREED) continue;
+            players.add(key);
+        }
+        return players;
+    }
+    
+    /**
      * Sets a custom value for a jailed player. If the player is
      * not in jail, nothing will happen.
      * 
