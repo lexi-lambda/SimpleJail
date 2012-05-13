@@ -441,7 +441,7 @@ public class SimpleJail extends JavaPlugin {
      */
     public void setJailParameter(String player, String node, String value) {
         if (!this.playerIsJailed(player)) return;
-        jailed.set(player.toLowerCase() + "." + node, value);
+        jailed.set(player.toLowerCase() + ".data." + node, value);
         this.saveJail();
     }
     
@@ -467,7 +467,7 @@ public class SimpleJail extends JavaPlugin {
      */
     public void setJailParameter(String player, String node, int value) {
         if (!this.playerIsJailed(player)) return;
-        jailed.set(player.toLowerCase() + "." + node, value);
+        jailed.set(player.toLowerCase() + ".data." + node, value);
         this.saveJail();
     }
     
@@ -493,7 +493,7 @@ public class SimpleJail extends JavaPlugin {
      */
     public String getJailString(String player, String node) {
         if (!this.playerIsJailed(player)) return null;
-        return jailed.getString(player.toLowerCase() + "." + node, null);
+        return jailed.getString(player.toLowerCase() + ".data." + node, null);
     }
     
     /**
@@ -518,7 +518,7 @@ public class SimpleJail extends JavaPlugin {
      */
     public int getJailInt(String player, String node) {
         if (!this.playerIsJailed(player)) return -1;
-        return jailed.getInt(player.toLowerCase() + "." + node, -1);
+        return jailed.getInt(player.toLowerCase() + ".data." + node, -1);
     }
     
     /**
