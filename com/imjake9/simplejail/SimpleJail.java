@@ -144,6 +144,21 @@ public class SimpleJail extends JavaPlugin {
     }
     
     /**
+     * Sends a player to jail to a location.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param jailee
+     * @param jailer
+     * @param loc
+     * @throws JailException 
+     */
+    public void jailPlayer(String jailee, String jailer, Location loc) throws JailException {
+        this.jailPlayer(jailee, jailer, -1, loc);
+    }
+    
+    /**
      * Sends a player to jail for a specific time and to a location.
      * 
      * Throws a JailException that contains a formatted message,
