@@ -2,6 +2,7 @@ package com.imjake9.simplejail;
 
 import com.imjake9.simplejail.SimpleJail.JailMessage;
 import com.imjake9.simplejail.api.SimpleJailCommandListener;
+import com.imjake9.simplejail.api.SimpleJailCommandListener.HandleStatus;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -44,8 +45,11 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 return true;
             }
             
-            if (this.dispatchCommandToListeners(sender, commandLabel, args))
+            HandleStatus status = this.dispatchCommandToListeners(sender, commandLabel, args);
+            if (status == HandleStatus.SUCCESS)
                 return true;
+            if (status == HandleStatus.FAILURE)
+                return false;
             
             if (args.length != 1 && args.length != 2) return false;
             
@@ -84,8 +88,11 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 return true;
             }
             
-            if (this.dispatchCommandToListeners(sender, commandLabel, args))
+            HandleStatus status = this.dispatchCommandToListeners(sender, commandLabel, args);
+            if (status == HandleStatus.SUCCESS)
                 return true;
+            if (status == HandleStatus.FAILURE)
+                return false;
             
             if (args.length != 1) return false;
             
@@ -266,14 +273,15 @@ public class SimpleJailCommandHandler implements CommandExecutor {
      * @param args
      * @return 
      */
-    private boolean dispatchCommandToListeners(CommandSender sender, String command, String args[]) {
-        boolean handled = false;
+    private HandleStatus dispatchCommandToListeners(CommandSender sender, String command, String args[]) {
+        HandleStatus handled = HandleStatus.UNHANDLED;
         execute:
         for (Priority priority : commandListeners.keySet()) {
             if (priority.equals(Priority.MONITOR)) break;
             for (SimpleJailCommandListener listener : commandListeners.get(priority)) {
-                if (listener.handleJailCommand(sender, command, args)) {
-                    handled = true;
+                HandleStatus status = listener.handleJailCommand(sender, command, args);
+                if (status != HandleStatus.UNHANDLED) {
+                    handled = status;
                     break execute;
                 }
             }

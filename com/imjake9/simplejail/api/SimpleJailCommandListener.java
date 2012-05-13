@@ -15,7 +15,7 @@ public interface SimpleJailCommandListener {
      * @param args the arguments for the command
      * @return whether or not the command was handled
      */
-    boolean handleJailCommand(CommandSender sender, String command, String[] args);
+    HandleStatus handleJailCommand(CommandSender sender, String command, String[] args);
     
     /**
      * Controls the priority of event handling.
@@ -25,7 +25,7 @@ public interface SimpleJailCommandListener {
      * the lower levels won't get called. The exception is MONITOR, which
      * is always called, and returning true/false does nothing in that level.
      */
-    public enum Priority {
+    public static enum Priority {
         
         HIGHEST(0),
         HIGH(1),
@@ -40,9 +40,25 @@ public interface SimpleJailCommandListener {
             this.slot = slot;
         }
         
-        int getSlot() {
+        public int getSlot() {
             return slot;
         }
+        
+    }
+    
+    /**
+     * Determines how a handler handled a command.
+     * 
+     * If success is returned, the command is regarded as completed and is
+     * not passed on. If failure is returned, the command is regarded as
+     * a failure and is not passed on. If unhandled is returned, nothing
+     * happens and the command is passed further down the chain.
+     */
+    public static enum HandleStatus {
+        
+        SUCCESS,
+        FAILURE,
+        UNHANDLED;
         
     }
     
