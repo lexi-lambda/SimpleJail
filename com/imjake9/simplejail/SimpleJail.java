@@ -12,13 +12,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -781,6 +781,17 @@ public class SimpleJail extends JavaPlugin {
      */
     public void unregisterCommandListener(SimpleJailCommandListener listener, Priority priority) {
         handler.removeListener(listener, priority);
+    }
+    
+    /**
+     * Changes the usage message of a SimpleJail command.
+     * 
+     * @param command
+     * @param usage 
+     */
+    public void setCommandUsage(String command, String usage) {
+        PluginCommand cmd = this.getCommand(command);
+        cmd.setUsage(usage);
     }
     
     /**
