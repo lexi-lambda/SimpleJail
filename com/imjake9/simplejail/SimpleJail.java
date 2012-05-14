@@ -537,9 +537,6 @@ public class SimpleJail extends JavaPlugin {
     /**
      * Returns true if the player is in jail.
      * 
-     * Does not take status into account, so even if a player is freed,
-     * this will still return true.
-     * 
      * @param player the player to check for
      * @return 
      */
@@ -550,24 +547,18 @@ public class SimpleJail extends JavaPlugin {
     /**
      * Returns true if the player is in jail.
      * 
-     * Does not take status into account, so even if a player is freed,
-     * this will still return true.
-     * 
      * @param player the player to check for
      * @return 
      */
     public boolean playerIsJailed(String player) {
-        if (jailed.get(player.toLowerCase()) != null)
+        if (jailed.get(player.toLowerCase()) != null && getPlayerStatus(player.toLowerCase()) != JailStatus.FREED)
             return true;
         return false;
     }
     
     /**
-     * Returns true if the player is unjailed and has a set
-     * time limit for unjail.
-     * 
-     * Does not take status into account, so even if a player is freed,
-     * this will still return true.
+     * Returns true if the player is jailed and has a set
+     * time limit for jail.
      * 
      * @param player the player to check for
      * @return 
@@ -577,11 +568,8 @@ public class SimpleJail extends JavaPlugin {
     }
     
     /**
-     * Returns true if the player is unjailed and has a set
-     * time limit for unjail.
-     * 
-     * Does not take status into account, so even if a player is freed,
-     * this will still return true.
+     * Returns true if the player is jailed and has a set
+     * time limit for jail.
      * 
      * @param player the player to check for
      * @return 
