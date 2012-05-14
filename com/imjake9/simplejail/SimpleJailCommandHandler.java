@@ -4,6 +4,7 @@ import com.imjake9.simplejail.SimpleJail.JailMessage;
 import com.imjake9.simplejail.api.SimpleJailCommandListener;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.HandleStatus;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
+import com.imjake9.simplejail.utils.Messaging;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -41,7 +42,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
         if(commandLabel.equalsIgnoreCase("jail")) {
             
             if(!hasPermission(sender, "simplejail.jail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jail");
+                Messaging.send(JailMessage.LACKS_PERMISSIONS, sender, "simplejail.jail");
                 return true;
             }
             
@@ -75,16 +76,16 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // Send success message:
             if (args.length == 1)
-                JailMessage.JAIL.send(sender, args[0]);
+                Messaging.send(JailMessage.JAIL, sender, args[0]);
             else
-                JailMessage.TEMPJAIL.send(sender, args[0], plugin.prettifyMinutes(time));
+                Messaging.send(JailMessage.TEMPJAIL, sender, args[0], plugin.prettifyMinutes(time));
             
             return true;
             
         } else if(commandLabel.equalsIgnoreCase("unjail")) {
             
             if(!hasPermission(sender, "simplejail.unjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.unjail");
+                Messaging.send(JailMessage.LACKS_PERMISSIONS, sender, "simplejail.unjail");
                 return true;
             }
             
@@ -111,14 +112,14 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             }
             
             // Send success message
-            JailMessage.UNJAIL.send(sender, args[0]);
+            Messaging.send(JailMessage.UNJAIL, sender, args[0]);
             
             return true;
             
         } else if(commandLabel.equalsIgnoreCase("setjail")) {
             
             if(!hasPermission(sender, "simplejail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.setjail");
+                Messaging.send(JailMessage.LACKS_PERMISSIONS, sender, "simplejail.setjail");
                 return true;
             }
             
@@ -126,7 +127,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // If not a player, only use explicit notation:
             if (!(sender instanceof Player) && args.length != 4) {
-                JailMessage.ONLY_PLAYERS.send(sender);
+                Messaging.send(JailMessage.ONLY_PLAYERS, sender);
                 return true;
             }
             
@@ -142,7 +143,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 
                 // Check if passed coordinates are correct:
                 if (!(new Scanner(args[0]).hasNextInt()) || !(new Scanner(args[1]).hasNextInt()) || !(new Scanner(args[2]).hasNextInt())) {
-                    JailMessage.INVALID_COORDINATE.send(sender);
+                    Messaging.send(JailMessage.INVALID_COORDINATE, sender);
                     return true;
                 }
                 
@@ -159,14 +160,14 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             plugin.setJail(loc);
             
             // Send success message
-            JailMessage.JAIL_POINT_SET.send(sender);
+            Messaging.send(JailMessage.JAIL_POINT_SET, sender);
             
             return true;
             
         } else if(commandLabel.equalsIgnoreCase("setunjail")) {
             
             if(!hasPermission(sender, "simplejail.setjail")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.setjail");
+                Messaging.send(JailMessage.LACKS_PERMISSIONS, sender, "simplejail.setjail");
                 return true;
             }
             
@@ -174,7 +175,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // If not a player, only use explicit notation:
             if (!(sender instanceof Player) && args.length != 4) {
-                JailMessage.ONLY_PLAYERS.send(sender);
+                Messaging.send(JailMessage.ONLY_PLAYERS, sender);
                 return true;
             }
             
@@ -190,7 +191,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
                 
                 // Check if passed coordinates are correct:
                 if (!(new Scanner(args[0]).hasNextInt()) || !(new Scanner(args[1]).hasNextInt()) || !(new Scanner(args[2]).hasNextInt())) {
-                    JailMessage.INVALID_COORDINATE.send(sender);
+                    Messaging.send(JailMessage.INVALID_COORDINATE, sender);
                     return true;
                 }
                 
@@ -207,14 +208,14 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             plugin.setUnjail(loc);
             
             // Send success message
-            JailMessage.UNJAIL_POINT_SET.send(sender);
+            Messaging.send(JailMessage.UNJAIL_POINT_SET, sender);
             
             return true;
             
         } else if(commandLabel.equalsIgnoreCase("jailtime")) {
             
             if(!hasPermission(sender, "simplejail.jailtime")) {
-                JailMessage.LACKS_PERMISSIONS.send(sender, "simplejail.jailtime");
+                Messaging.send(JailMessage.LACKS_PERMISSIONS, sender, "simplejail.jailtime");
                 return true;
             }
             
@@ -222,7 +223,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // If not a player, a target must be explicit:
             if (!(sender instanceof Player) && args.length == 0) {
-                JailMessage.MUST_SPECIFY_TARGET.send(sender);
+                Messaging.send(JailMessage.MUST_SPECIFY_TARGET, sender);
                 return true;
             }
             
@@ -231,18 +232,18 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // Validate target:
             if (player == null || !player.isOnline()) {
-                JailMessage.PLAYER_NOT_FOUND.send(sender, args[0]);
+                Messaging.send(JailMessage.PLAYER_NOT_FOUND, sender, args[0]);
                 return true;
             }
             
             if (!plugin.playerIsTempJailed(player)) {
-                JailMessage.NOT_TEMPJAILED.send(sender, (args.length == 0) ? sender.getName() : args[0]);
+                Messaging.send(JailMessage.NOT_TEMPJAILED, sender, (args.length == 0) ? sender.getName() : args[0]);
                 return true;
             }
             
             // Send success message:
             int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
-            JailMessage.JAIL_TIME.send(sender, plugin.prettifyMinutes(minutes));
+            Messaging.send(JailMessage.JAIL_TIME, sender, plugin.prettifyMinutes(minutes));
  
             return true;
             

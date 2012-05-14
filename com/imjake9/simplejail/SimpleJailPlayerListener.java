@@ -2,6 +2,7 @@ package com.imjake9.simplejail;
 
 import com.imjake9.simplejail.SimpleJail.JailMessage;
 import com.imjake9.simplejail.SimpleJail.JailStatus;
+import com.imjake9.simplejail.utils.Messaging;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -51,7 +52,7 @@ public class SimpleJailPlayerListener implements Listener {
                     ex.printStackTrace();
                     return;
                 }
-                JailMessage.UNTEMPJAILED.print(player.getName());
+                SimpleJail.getMessager().info(JailMessage.UNTEMPJAILED, player.getName());
                 return;
             }
             
@@ -60,10 +61,10 @@ public class SimpleJailPlayerListener implements Listener {
         // If player is still jailed, check status:
         if (status == JailStatus.JAILED) {
             
-            JailMessage.PLAYER_IS_JAILED.send(player);
+            Messaging.send(JailMessage.PLAYER_IS_JAILED, player);
             if(plugin.playerIsTempJailed(player)) {
                 int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
-                JailMessage.JAIL_TIME.send(player, plugin.prettifyMinutes(minutes));
+                Messaging.send(JailMessage.JAIL_TIME, player, plugin.prettifyMinutes(minutes));
             }
             
         } else if (status == JailStatus.PENDING) {
@@ -74,9 +75,9 @@ public class SimpleJailPlayerListener implements Listener {
             // Send message
             if (plugin.playerIsTempJailed(player)) {
                 int minutes = (int) ((plugin.getTempJailTime(player) - System.currentTimeMillis()) / 60000);
-                JailMessage.TEMPJAILED.send(player, plugin.prettifyMinutes(minutes));
+                Messaging.send(JailMessage.TEMPJAILED, player, plugin.prettifyMinutes(minutes));
             } else {
-                JailMessage.JAILED.send(player);
+                Messaging.send(JailMessage.JAILED, player);
             }
             
         } else if (status == JailStatus.FREED) {

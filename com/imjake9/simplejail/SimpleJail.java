@@ -5,6 +5,10 @@ import com.imjake9.simplejail.api.SimpleJailCommandListener;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
 import com.imjake9.simplejail.events.PlayerJailEvent;
 import com.imjake9.simplejail.events.PlayerUnjailEvent;
+import com.imjake9.simplejail.utils.MessageTemplate;
+import com.imjake9.simplejail.utils.Messager;
+import com.imjake9.simplejail.utils.Messaging;
+import com.imjake9.simplejail.utils.Messaging.MessageLevel;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
@@ -12,11 +16,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 import net.milkbowl.vault.permission.Permission;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -30,10 +31,10 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
 
 public class SimpleJail extends JavaPlugin {
     
-    private static final Logger log = Logger.getLogger("Minecraft");
     private static SimpleJail plugin = null;
     
     public ConsoleCommandSender console;
+    private Messager messager;
     private Permission vaultPermissions;
     private PermissionsPlugin bukkitPermissions;
     private PermissionManager pexPermissions;
@@ -53,6 +54,10 @@ public class SimpleJail extends JavaPlugin {
         return plugin;
     }
     
+    public static Messager getMessager() {
+        return plugin.messager;
+    }
+    
     @Override
     public void onDisable() {
         // Remove instance
@@ -64,6 +69,9 @@ public class SimpleJail extends JavaPlugin {
         
         // Register instance
         plugin = this;
+        
+        // Init messager
+        messager = new Messager(this);
         
         // Get console:
         console = this.getServer().getConsoleSender();
@@ -99,7 +107,7 @@ public class SimpleJail extends JavaPlugin {
                             // Should never happen
                             ex.printStackTrace();
                         }
-                        JailMessage.UNTEMPJAILED.print(p.getName());
+                        messager.info(JailMessage.UNTEMPJAILED, p.getName());
                     }
                 }
                 
@@ -184,7 +192,7 @@ public class SimpleJail extends JavaPlugin {
         
         // Check if player is slready jailed:
         if(jailed.get(jailee) != null && getPlayerStatus(jailee) == JailStatus.JAILED) {
-            throw new JailException("Jailed player was sent jail message.", JailMessage.ALREADY_IN_JAIL.message(jailee));
+            throw new JailException("Jailed player was sent jail message.", Messaging.fillArgs(JailMessage.ALREADY_IN_JAIL, jailee));
         }
         
         // Put player in jailed group:
@@ -211,8 +219,8 @@ public class SimpleJail extends JavaPlugin {
         
         // Send message to player
         if (player != null && player.isOnline()) {
-            if(time <= 0) JailMessage.JAILED.send(player);
-            else JailMessage.TEMPJAILED.send(player, this.prettifyMinutes(time));
+            if(time <= 0) Messaging.send(JailMessage.JAILED, player);
+            else Messaging.send(JailMessage.TEMPJAILED, player, this.prettifyMinutes(time));
         }
         
     }
@@ -258,7 +266,7 @@ public class SimpleJail extends JavaPlugin {
         
         // Check if player is in jail:
         if(jailed.get(name) == null) {
-            throw new JailException("Player not in jail was sent unjail message.", JailMessage.NOT_IN_JAIL.message(name));
+            throw new JailException("Player not in jail was sent unjail message.", Messaging.fillArgs(JailMessage.NOT_IN_JAIL, name));
         }
         
         // Check if player is offline:
@@ -276,7 +284,7 @@ public class SimpleJail extends JavaPlugin {
         
         this.saveJail();
         
-        JailMessage.UNJAILED.send(player);
+        Messaging.send(JailMessage.UNJAILED, player);
         
     }
     
@@ -391,7 +399,7 @@ public class SimpleJail extends JavaPlugin {
         }
         
         if(!permissionsLoaded) {
-            JailMessage.PERMISSIONS_NOT_FOUND.print();
+            messager.severe(JailMessage.PERMISSIONS_NOT_FOUND);
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -809,93 +817,54 @@ public class SimpleJail extends JavaPlugin {
     /**
      * Manages various SimpleJail messages.
      */
-    public enum JailMessage {
-        PERMISSIONS_NOT_FOUND ("ERROR: Could not find permissions plugin."),
-        LACKS_PERMISSIONS (ChatColor.RED + "You don't have permission to use that command (%1)."),
-        ONLY_PLAYERS (ChatColor.RED + "Only players can use that."),
-        JAIL (ChatColor.AQUA + "Player '%1' sent to jail."),
-        UNJAIL (ChatColor.AQUA + "Player '%1' removed from jail."),
-        TEMPJAIL (ChatColor.AQUA + "Player '%1' jailed for %2."),
-        JAILED (ChatColor.AQUA + "You have been jailed!"),
-        UNJAILED (ChatColor.AQUA + "You have been removed from jail."),
-        TEMPJAILED (ChatColor.AQUA + "You have been jailed for %1."),
-        UNTEMPJAILED ("Player '%1' auto-unjailed."),
-        ALREADY_IN_JAIL (ChatColor.RED + "Player '%1' is already in jail!"),
-        NOT_IN_JAIL (ChatColor.RED + "Player '%1' is not in jail!"),
-        NOT_TEMPJAILED (ChatColor.RED + "Player '%1' is not tempjailed."),
-        JAIL_POINT_SET (ChatColor.AQUA + "Jail point set."),
-        UNJAIL_POINT_SET (ChatColor.AQUA + "Unjail point set."),
-        INVALID_COORDINATE (ChatColor.RED + "Invalid coordinate."),
-        MUST_SPECIFY_TARGET (ChatColor.RED + "You must specify a player."),
-        PLAYER_NOT_FOUND (ChatColor.RED + "Couldn't find player '%1'."),
-        JAIL_TIME (ChatColor.AQUA + "Remaining jail time: %1."),
-        PLAYER_IS_JAILED(ChatColor.AQUA + "You are jailed.");
+    public enum JailMessage implements MessageTemplate {
+        PERMISSIONS_NOT_FOUND (MessageLevel.PLAIN, "ERROR: Could not find permissions plugin."),
+        LACKS_PERMISSIONS (MessageLevel.ERROR, "You don't have permission to use that command (%1)."),
+        ONLY_PLAYERS (MessageLevel.ERROR, "Only players can use that."),
+        JAIL (MessageLevel.SUCCESS, "Player <i>%1</i> sent to jail."),
+        UNJAIL (MessageLevel.SUCCESS, "Player <i>%1</i> removed from jail."),
+        TEMPJAIL (MessageLevel.SUCCESS, "Player <i>%1</i> jailed for %2."),
+        JAILED (MessageLevel.COMPLETE, "You have been jailed!"),
+        UNJAILED (MessageLevel.COMPLETE, "You have been removed from jail."),
+        TEMPJAILED (MessageLevel.COMPLETE, "You have been jailed for %1."),
+        UNTEMPJAILED (MessageLevel.COMPLETE, "Player '%1' auto-unjailed."),
+        ALREADY_IN_JAIL (MessageLevel.ERROR, "Player <i>%1</i> is already in jail!"),
+        NOT_IN_JAIL (MessageLevel.ERROR, "Player <i>%1</i> is not in jail!"),
+        NOT_TEMPJAILED (MessageLevel.ERROR, "Player <i>%1</i> is not tempjailed."),
+        JAIL_POINT_SET (MessageLevel.SUCCESS, "Jail point set."),
+        UNJAIL_POINT_SET (MessageLevel.SUCCESS, "Unjail point set."),
+        INVALID_COORDINATE (MessageLevel.ERROR, "Invalid coordinate."),
+        MUST_SPECIFY_TARGET (MessageLevel.ERROR, "You must specify a player."),
+        PLAYER_NOT_FOUND (MessageLevel.ERROR, "Couldn't find player '%1'."),
+        JAIL_TIME (MessageLevel.COMPLETE, "Remaining jail time: %1."),
+        PLAYER_IS_JAILED(MessageLevel.COMPLETE, "You are jailed.");
         
+        private MessageLevel level;
         private String format;
         
-        JailMessage(String format) {
-            this.format = format;
+        JailMessage(MessageLevel level, String format) {
+            this.level = level;
+            this.format = Messaging.parseStyling(level.getOpeningTag() + format + level.getClosingTag());
         }
         
         /**
-         * Gets the message as a String.
+         * Gets the message's level.
+         *
+         * @return level
+         */
+        @Override
+        public MessageLevel getLevel() {
+            return level;
+        }
+        
+        /**
+         * Gets the raw message as a String.
          * 
          * @return the message
          */
-        String message() {
+        @Override
+        public String getMessage() {
             return format;
-        }
-        
-        /**
-         * Gets the message with arguments filled.
-         * 
-         * @param args list of arguments
-         * @return the message
-         */
-        String message(String... args) {
-            String message = format;
-            for(int i = 1; ; i++) {
-                if (message.indexOf("%" + i) > 0) {
-                    message = message.replaceAll("%" + i, args[i - 1]);
-                } else break;
-            }
-            return message;
-        }
-        
-        /**
-         * Sends a message.
-         * 
-         * @param sender reciever
-         */
-        void send(CommandSender sender) {
-            sender.sendMessage(format);
-        }
-        
-        /**
-         * Sends a message with arguments.
-         * 
-         * @param sender reciever
-         * @param args list of arguments
-         */
-        void send(CommandSender sender, String... args) {
-            sender.sendMessage(message(args));
-        }
-        
-        /**
-         * Prints a message prefixed with [SimpleJail] to the console.
-         */
-        void print() {
-            log.info("[SimpleJail] " + format);
-        }
-        
-        
-        /**
-         * Prints a message with arguments prefixed with [SimpleJail] to the console.
-         * 
-         * @param args 
-         */
-        void print(String... args) {
-            log.info("[SimpleJail] " + message(args));
         }
     }
 }
