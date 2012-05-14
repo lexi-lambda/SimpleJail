@@ -57,7 +57,6 @@ public class SimpleJail extends JavaPlugin {
     public void onDisable() {
         // Remove instance
         plugin = null;
-        log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() +  " disabled.");
     }
 
     @Override
@@ -79,18 +78,16 @@ public class SimpleJail extends JavaPlugin {
         // Set up handlers
         listener = new SimpleJailPlayerListener(this);
         this.getServer().getPluginManager().registerEvents(listener, this);
-        
         handler = new SimpleJailCommandHandler(this);
         
+        // Register auto-unjail code
         this.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
 
             @Override
             public void run() {
-                
                 long currentTime = System.currentTimeMillis();
                 
                 for (Player p : getServer().getOnlinePlayers()) {
-                    
                     if (!playerIsJailed(p) || !playerIsTempJailed(p)) continue;
 
                     double tempTime = getTempJailTime(p);
@@ -104,14 +101,12 @@ public class SimpleJail extends JavaPlugin {
                         }
                         JailMessage.UNTEMPJAILED.print(p.getName());
                     }
-                    
                 }
                 
             }
             
         }, 600, 600);
         
-        log.info("[SimpleJail] " + this.getDescription().getName() + " v" + this.getDescription().getVersion() + " enabled.");
     }
     
     /**
@@ -750,7 +745,7 @@ public class SimpleJail extends JavaPlugin {
     /**
      * Converts a human-readable string to a number of minutes.
      * 
-     * Returns -1 if the string isn't parseable.
+     * Returns -1 if the string isn't parsable.
      * 
      * @param time
      * @return 
