@@ -5,6 +5,7 @@ import com.imjake9.simplejail.api.SimpleJailCommandListener;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
 import com.imjake9.simplejail.events.PlayerJailEvent;
 import com.imjake9.simplejail.events.PlayerUnjailEvent;
+import com.imjake9.simplejail.metrics.Metrics;
 import com.imjake9.simplejail.utils.MessageTemplate;
 import com.imjake9.simplejail.utils.Messager;
 import com.imjake9.simplejail.utils.Messaging;
@@ -114,6 +115,12 @@ public class SimpleJail extends JavaPlugin {
             }
             
         }, 600, 600);
+        
+        // Create Metrics handler
+        try {
+            Metrics metrics = new Metrics(plugin);
+            metrics.start();
+        } catch (IOException ex) {}
         
     }
     
