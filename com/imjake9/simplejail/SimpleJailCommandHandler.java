@@ -1,6 +1,7 @@
 package com.imjake9.simplejail;
 
 import com.imjake9.simplejail.SimpleJail.JailMessage;
+import com.imjake9.simplejail.api.JailInfo;
 import com.imjake9.simplejail.api.SimpleJailCommandListener;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.HandleStatus;
 import com.imjake9.simplejail.api.SimpleJailCommandListener.Priority;
@@ -55,15 +56,16 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             if (args.length != 1 && args.length != 2) return false;
             
             // Catch JailExceptions
+            JailInfo info;
             int time = 0;
             try {
                 
                 // Jail/tempjail player:
                 if (args.length == 1) 
-                    plugin.jailPlayer(args[0], sender.getName());
+                    info = plugin.jailPlayer(args[0], sender.getName());
                 else {
                     time = plugin.parseTimeString(args[1]);
-                    plugin.jailPlayer(args[0], sender.getName(), time);
+                    info = plugin.jailPlayer(args[0], sender.getName(), time);
                 }
                 
             } catch (JailException ex) {
@@ -76,9 +78,9 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // Send success message:
             if (args.length == 1)
-                Messaging.send(JailMessage.JAIL, sender, args[0]);
+                Messaging.send(JailMessage.JAIL, sender, info.getJailee());
             else
-                Messaging.send(JailMessage.TEMPJAIL, sender, args[0], plugin.prettifyMinutes(time));
+                Messaging.send(JailMessage.TEMPJAIL, sender, info.getJailee(), plugin.prettifyMinutes(time));
             
             return true;
             
@@ -98,10 +100,11 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             if (args.length != 1) return false;
             
             // Catch JailExceptions
+            JailInfo info;
             try {
                 
                 // Unjail player
-                plugin.unjailPlayer(args[0]);
+                info = plugin.unjailPlayer(args[0]);
                 
             } catch (JailException ex) {
                 
@@ -112,7 +115,7 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             }
             
             // Send success message
-            Messaging.send(JailMessage.UNJAIL, sender, args[0]);
+            Messaging.send(JailMessage.UNJAIL, sender, info.getJailee());
             
             return true;
             
