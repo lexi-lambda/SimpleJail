@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.milkbowl.vault.permission.Permission;
+import net.milkbowl.vault.permission.plugins.Permission_SuperPerms;
 import org.bukkit.Location;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
@@ -401,7 +402,8 @@ public class SimpleJail extends JavaPlugin {
             RegisteredServiceProvider<Permission> rsp = this.getServer().getServicesManager().getRegistration(Permission.class);
             if (rsp != null) {
                 vaultPermissions = rsp.getProvider();
-                permissionsLoaded = true;
+                if (!(vaultPermissions instanceof Permission_SuperPerms))
+                    permissionsLoaded = true;
             }
         }
         
