@@ -232,16 +232,16 @@ public class SimpleJailCommandHandler implements CommandExecutor {
             
             // Get the target
             Player player = (args.length == 0) ? (Player) sender : plugin.getServer().getPlayer(args[0]);
-            args[0] = player == null ? args[0].toLowerCase() : player.getName().toLowerCase();
+            String name = player == null ? args[0].toLowerCase() : player.getName().toLowerCase();
             
             // Validate target:
-            if (!plugin.playerIsJailed(args[0])) {
-                Messaging.send(JailMessage.NOT_IN_JAIL, sender, args[0]);
+            if (!plugin.playerIsJailed(name)) {
+                Messaging.send(JailMessage.NOT_IN_JAIL, sender, name);
                 return true;
             }
             
             if (!plugin.playerIsTempJailed(player)) {
-                Messaging.send(JailMessage.NOT_TEMPJAILED, sender, (args.length == 0) ? sender.getName() : args[0]);
+                Messaging.send(JailMessage.NOT_TEMPJAILED, sender, name);
                 return true;
             }
             
