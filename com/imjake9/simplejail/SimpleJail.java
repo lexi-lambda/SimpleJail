@@ -133,10 +133,11 @@ public class SimpleJail extends JavaPlugin {
      * 
      * @param jailee
      * @param jailer
+     * @return the JailInfo object associated with this jailing
      * @throws JailException 
      */
-    public void jailPlayer(String jailee, String jailer) throws JailException {
-        this.jailPlayer(jailee, jailer, -1, jailLoc);
+    public JailInfo jailPlayer(String jailee, String jailer) throws JailException {
+        return this.jailPlayer(jailee, jailer, -1, jailLoc);
     }
     
     /**
@@ -148,10 +149,11 @@ public class SimpleJail extends JavaPlugin {
      * @param jailee
      * @param jailer
      * @param time time in minutes
+     * @return the JailInfo object associated with this jailing
      * @throws JailException 
      */
-    public void jailPlayer(String jailee, String jailer, int time) throws JailException {
-        this.jailPlayer(jailee, jailer, time, jailLoc);
+    public JailInfo jailPlayer(String jailee, String jailer, int time) throws JailException {
+        return this.jailPlayer(jailee, jailer, time, jailLoc);
     }
     
     /**
@@ -163,10 +165,11 @@ public class SimpleJail extends JavaPlugin {
      * @param jailee
      * @param jailer
      * @param loc
+     * @return the JailInfo object associated with this jailing
      * @throws JailException 
      */
-    public void jailPlayer(String jailee, String jailer, Location loc) throws JailException {
-        this.jailPlayer(jailee, jailer, -1, loc);
+    public JailInfo jailPlayer(String jailee, String jailer, Location loc) throws JailException {
+        return this.jailPlayer(jailee, jailer, -1, loc);
     }
     
     /**
@@ -179,9 +182,10 @@ public class SimpleJail extends JavaPlugin {
      * @param jailer
      * @param time time in minutes
      * @param loc
+     * @return the JailInfo object associated with this jailing
      * @throws JailException 
      */
-    public void jailPlayer(String jailee, String jailer, int time, Location loc) throws JailException {
+    public JailInfo jailPlayer(String jailee, String jailer, int time, Location loc) throws JailException {
         
         // Autocomplete name if player is online:
         Player player = this.getServer().getPlayer(jailee);
@@ -193,7 +197,7 @@ public class SimpleJail extends JavaPlugin {
         
         // If event cancelled, take no action:
         if (e.isCancelled())
-            return;
+            return null;
         
         // Update time to event result
         time = e.getLength();
@@ -231,6 +235,8 @@ public class SimpleJail extends JavaPlugin {
             else Messaging.send(JailMessage.TEMPJAILED, player, this.prettifyMinutes(time));
         }
         
+        return e.getInfo();
+        
     }
     
     /**
@@ -240,10 +246,11 @@ public class SimpleJail extends JavaPlugin {
      * meant to be sent to a player.
      * 
      * @param name
+     * @return the JailInfo object associated with this unjailing
      * @throws JailException 
      */
-    public void unjailPlayer(String name) throws JailException {
-        this.unjailPlayer(name, jailLoc);
+    public JailInfo unjailPlayer(String name) throws JailException {
+        return this.unjailPlayer(name, jailLoc);
     }
     
     /**
@@ -254,9 +261,10 @@ public class SimpleJail extends JavaPlugin {
      * 
      * @param name
      * @param location
+     * @return the JailInfo object associated with this unjailing
      * @throws JailException 
      */
-    public void unjailPlayer(String name, Location loc) throws JailException {
+    public JailInfo unjailPlayer(String name, Location loc) throws JailException {
         
         // Autocomplete name if player is online:
         Player player = this.getServer().getPlayer(name);
@@ -270,7 +278,7 @@ public class SimpleJail extends JavaPlugin {
         
         // If event cancelled, take no action:
         if (e.isCancelled())
-            return;
+            return null;
         
         // Check if player is in jail:
         if(jailed.get(name) == null) {
@@ -280,7 +288,7 @@ public class SimpleJail extends JavaPlugin {
         // Check if player is offline:
         if (player == null || !player.isOnline()) {
             jailed.set(name + ".status", "freed");
-            return;
+            return e.getInfo();
         }
         
         // Move player out of jail:
@@ -293,6 +301,8 @@ public class SimpleJail extends JavaPlugin {
         this.saveJail();
         
         Messaging.send(JailMessage.UNJAILED, player);
+        
+        return e.getInfo();
         
     }
     
