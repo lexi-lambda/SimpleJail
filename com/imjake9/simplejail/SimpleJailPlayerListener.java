@@ -27,7 +27,7 @@ public class SimpleJailPlayerListener implements Listener {
         
         if(!plugin.playerIsJailed(player)) return;
         
-        event.setRespawnLocation(plugin.getJailLocation());
+        event.setRespawnLocation(plugin.getJailLocation(player.getName()));
         
     }
     
@@ -69,7 +69,7 @@ public class SimpleJailPlayerListener implements Listener {
             
         } else if (status == JailStatus.PENDING) {
             
-            player.teleport(plugin.getJailLocation());
+            player.teleport(plugin.getJailLocation(player.getName()));
             plugin.setPlayerStatus(player, JailStatus.JAILED);
             
             // Send message

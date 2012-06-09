@@ -9,15 +9,12 @@ public class PlayerUnjailEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
     
-    private Location unjailLocation;
-    
     private boolean cancelled = false;
     
     private JailInfo info;
     
-    public PlayerUnjailEvent(JailInfo info, Location unjailLocation) {
+    public PlayerUnjailEvent(JailInfo info) {
         this.info = info;
-        this.unjailLocation = unjailLocation;
     }
     
     /**
@@ -35,7 +32,7 @@ public class PlayerUnjailEvent extends Event {
      * @return 
      */
     public Location getUnjailLocation() {
-        return this.unjailLocation;
+        return info.getUnjailLocation();
     }
     
     /**
@@ -44,7 +41,7 @@ public class PlayerUnjailEvent extends Event {
      * @param unjailLocation 
      */
     public void setUnjailLocation(Location unjailLocation) {
-        this.unjailLocation = unjailLocation;
+        info.setUnjailLocation(unjailLocation);
     }
     
     public boolean isCancelled() {

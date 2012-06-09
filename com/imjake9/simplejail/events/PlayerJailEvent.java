@@ -10,19 +10,17 @@ public class PlayerJailEvent extends Event {
     private static final HandlerList handlers = new HandlerList();
     
     private int length;
-    private Location jailLocation;
     
     private boolean cancelled = false;
     
     private JailInfo info;
     
-    public PlayerJailEvent(JailInfo info, Location jailLocation) {
-        this(info, jailLocation, -1);
+    public PlayerJailEvent(JailInfo info) {
+        this(info, -1);
     }
     
-    public PlayerJailEvent(JailInfo info, Location jailLocation, int length) {
+    public PlayerJailEvent(JailInfo info, int length) {
         this.info = info;
-        this.jailLocation = jailLocation;
         this.length = length;
     }
     
@@ -41,7 +39,7 @@ public class PlayerJailEvent extends Event {
      * @return 
      */
     public Location getJailLocation() {
-        return this.jailLocation;
+        return info.getJailLocation();
     }
     
     /**
@@ -50,7 +48,7 @@ public class PlayerJailEvent extends Event {
      * @param jailLocation 
      */
     public void setJailLocation(Location jailLocation) {
-        this.jailLocation = jailLocation;
+        info.setJailLocation(jailLocation);
     }
     
     /**

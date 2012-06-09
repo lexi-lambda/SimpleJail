@@ -10,6 +10,7 @@ import com.imjake9.simplejail.utils.MessageTemplate;
 import com.imjake9.simplejail.utils.Messager;
 import com.imjake9.simplejail.utils.Messaging;
 import com.imjake9.simplejail.utils.Messaging.MessageLevel;
+import com.imjake9.simplejail.utils.SerializableLocation;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import java.io.File;
@@ -23,6 +24,7 @@ import org.bukkit.Location;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -34,6 +36,10 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
 public class SimpleJail extends JavaPlugin {
     
     private static SimpleJail plugin = null;
+    
+    static {
+        ConfigurationSerialization.registerClass(SerializableLocation.class, "BukkitLocation");
+    }
     
     public ConsoleCommandSender console;
     private Messager messager;
@@ -64,6 +70,7 @@ public class SimpleJail extends JavaPlugin {
     public void onDisable() {
         // Remove instance
         plugin = null;
+        this.saveJail();
     }
 
     @Override
@@ -186,13 +193,44 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public JailInfo jailPlayer(String jailee, String jailer, int time, Location loc) throws JailException {
+        JailInfo info = new JailInfo(jailer, jailee);
+        info.setJailLocation(loc);
+        return this.jailPlayer(info, time);
+    }
+    
+    /**
+     * Sends a player to jail using a provided JailInfo object.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param info the data for use with this jail
+     * @return the JailInfo object associated with this jailing
+     * @throws JailException 
+     */
+    public JailInfo jailPlayer(JailInfo info) throws JailException {
+        return this.jailPlayer(info, -1);
+    }
+    
+    /**
+     * Sends a player to jail for a specific time using a provided JailInfo object.
+     * 
+     * Throws a JailException that contains a formatted message,
+     * meant to be sent to a player.
+     * 
+     * @param info the data for use with this jail
+     * @param time time in minutes
+     * @return the JailInfo object associated with this jailing
+     * @throws JailException 
+     */
+    public JailInfo jailPlayer(JailInfo info, int time) throws JailException {
         
         // Autocomplete name if player is online:
-        Player player = this.getServer().getPlayer(jailee);
-        jailee = player == null || !player.isOnline() ? jailee.toLowerCase() : player.getName().toLowerCase();
+        Player player = this.getServer().getPlayer(info.getJailee());
+        String jailee = player == null || !player.isOnline() ? info.getJailee().toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event:
-        PlayerJailEvent e = new PlayerJailEvent(new JailInfo(jailee, jailer), loc, time);
+        PlayerJailEvent e = new PlayerJailEvent(info, time);
         this.getServer().getPluginManager().callEvent(e);
         
         // If event cancelled, take no action:
@@ -225,6 +263,8 @@ public class SimpleJail extends JavaPlugin {
             jailed.set(jailee + ".status", "pending");
         
         jailed.set(jailee + ".jailer", e.getInfo().getJailer());
+        jailed.set(jailee + ".location.jail", new SerializableLocation(e.getInfo().getJailLocation()));
+        jailed.set(jailee + ".location.unjail", new SerializableLocation(e.getInfo().getUnjailLocation()));
         jailed.set(jailee + ".data", e.getInfo().getProperties());
         
         this.saveJail();
@@ -271,7 +311,7 @@ public class SimpleJail extends JavaPlugin {
         name = player == null || !player.isOnline() ? name.toLowerCase() : player.getName().toLowerCase();
         
         // Dispatch event
-        PlayerUnjailEvent e = new PlayerUnjailEvent(new JailInfo(name, jailed.getString(name + ".jailer")), unjailLoc);
+        PlayerUnjailEvent e = new PlayerUnjailEvent(new JailInfo(jailed.getString(name + ".jailer"), name, getJailLocation(name), loc));
         if (jailed.getConfigurationSection(name + ".data") != null)
             e.getInfo().addProperties(jailed.getConfigurationSection(name + ".data").getValues(true));
         this.getServer().getPluginManager().callEvent(e);
@@ -288,6 +328,7 @@ public class SimpleJail extends JavaPlugin {
         // Check if player is offline:
         if (player == null || !player.isOnline()) {
             jailed.set(name + ".status", "freed");
+            this.saveJail();
             return e.getInfo();
         }
         
@@ -546,19 +587,25 @@ public class SimpleJail extends JavaPlugin {
     /**
      * Returns the location set to be the jail.
      * 
+     * @param player the player to get the location for
      * @return jail location
      */
-    public Location getJailLocation() {
-        return jailLoc;
+    public Location getJailLocation(String player) {
+        if (player == null || !this.playerIsJailed(player)) return jailLoc;
+        if (jailed.get(player.toLowerCase() + ".location.jail") == null) return jailLoc;
+        return (Location) jailed.get(player.toLowerCase() + ".location.jail");
     }
     
     /**
      * Returns the location set to be the unjail point.
      * 
+     * @param player the player to get the location for
      * @return unjail location
      */
-    public Location getUnjailLocation() {
-        return unjailLoc;
+    public Location getUnjailLocation(String player) {
+        if (player == null || !this.playerIsJailed(player)) return unjailLoc;
+        if (jailed.get(player.toLowerCase() + ".location.unjail") == null) return unjailLoc;
+        return (Location) jailed.get(player.toLowerCase() + ".location.unjail");
     }
     
     /**

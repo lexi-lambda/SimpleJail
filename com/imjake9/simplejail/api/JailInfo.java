@@ -1,13 +1,17 @@
 package com.imjake9.simplejail.api;
 
+import com.imjake9.simplejail.SimpleJail;
 import java.util.HashMap;
 import java.util.Map;
+import org.bukkit.Location;
 
 
 public class JailInfo {
     
     protected String jailer;
     protected String jailee;
+    protected Location jailLoc;
+    protected Location unjailLoc;
     
     protected Map<String, Object> jailData;
     
@@ -15,10 +19,20 @@ public class JailInfo {
         this(jailer, jailee, new HashMap<String, Object>());
     }
     
-    public JailInfo(String jailer, String jailee, Map<String,Object> jailData) {
+    public JailInfo(String jailer, String jailee, Map<String, Object> jailData) {
+        this(jailer, jailee, jailData, SimpleJail.getPlugin().getJailLocation(null), SimpleJail.getPlugin().getUnjailLocation(null));
+    }
+    
+    public JailInfo(String jailer, String jailee, Location jailLoc, Location unjailLoc) {
+        this(jailer, jailee, new HashMap<String, Object>(), jailLoc, unjailLoc);
+    }
+    
+    public JailInfo(String jailer, String jailee, Map<String, Object> jailData, Location jailLoc, Location unjailLoc) {
         this.jailer = jailer;
         this.jailee = jailee;
         this.jailData = jailData;
+        this.jailLoc = jailLoc;
+        this.unjailLoc = unjailLoc;
     }
     
     /**
@@ -57,6 +71,42 @@ public class JailInfo {
      */
     public void setJailee(String jailee) {
         this.jailee = jailee;
+    }
+    
+    /**
+     * Gets the location to place the player in jail.
+     * 
+     * @return jail location
+     */
+    public Location getJailLocation() {
+        return jailLoc;
+    }
+    
+    /**
+     * Sets the location to place the player in jail.
+     * 
+     * @param jailLoc 
+     */
+    public void setJailLocation(Location jailLoc) {
+        this.jailLoc = jailLoc;
+    }
+    
+    /**
+     * Gets the location to place the player once removed from jail.
+     * 
+     * @return unjail location
+     */
+    public Location getUnjailLocation() {
+        return unjailLoc;
+    }
+    
+    /**
+     * Sets the location to place the player once removed from jail.
+     * 
+     * @param unjailLocation 
+     */
+    public void setUnjailLocation(Location unjailLocation) {
+        this.unjailLoc = unjailLocation;
     }
     
     /**
