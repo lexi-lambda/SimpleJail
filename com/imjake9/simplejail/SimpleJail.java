@@ -144,7 +144,7 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public JailInfo jailPlayer(String jailee, String jailer) throws JailException {
-        return this.jailPlayer(jailee, jailer, -1, jailLoc);
+        return this.jailPlayer(jailee, jailer, -1, getJailLocation(jailee));
     }
     
     /**
@@ -160,7 +160,7 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public JailInfo jailPlayer(String jailee, String jailer, int time) throws JailException {
-        return this.jailPlayer(jailee, jailer, time, jailLoc);
+        return this.jailPlayer(jailee, jailer, time, getJailLocation(jailee));
     }
     
     /**
@@ -290,7 +290,7 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public JailInfo unjailPlayer(String name) throws JailException {
-        return this.unjailPlayer(name, unjailLoc);
+        return this.unjailPlayer(name, getUnjailLocation(name));
     }
     
     /**
@@ -751,7 +751,7 @@ public class SimpleJail extends JavaPlugin {
             }
             return stringGroups;
         } else if (vaultPermissions != null) {
-            String[] groups = vaultPermissions.getPlayerGroups(jailLoc.getWorld(), player);
+            String[] groups = vaultPermissions.getPlayerGroups(getJailLocation(player).getWorld(), player);
             List<String> stringGroups = Arrays.asList(groups);
             return stringGroups;
         }
@@ -776,12 +776,12 @@ public class SimpleJail extends JavaPlugin {
         } else if(pexPermissions != null) {
             pexPermissions.getUser(player).setGroups(group.toArray(new String[0]));
         } else if (vaultPermissions != null) {
-            String[] groups = vaultPermissions.getPlayerGroups(jailLoc.getWorld(), player);
+            String[] groups = vaultPermissions.getPlayerGroups(getJailLocation(player).getWorld(), player);
             for (String g : groups) {
-                vaultPermissions.playerRemoveGroup(jailLoc.getWorld(), player, g);
+                vaultPermissions.playerRemoveGroup(getJailLocation(player).getWorld(), player, g);
             }
             for (String g : group) {
-                vaultPermissions.playerAddGroup(jailLoc.getWorld(), player, g);
+                vaultPermissions.playerAddGroup(getJailLocation(player).getWorld(), player, g);
             }
         }
     }
