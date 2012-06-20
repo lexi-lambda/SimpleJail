@@ -290,7 +290,7 @@ public class SimpleJail extends JavaPlugin {
      * @throws JailException 
      */
     public JailInfo unjailPlayer(String name) throws JailException {
-        return this.unjailPlayer(name, jailLoc);
+        return this.unjailPlayer(name, unjailLoc);
     }
     
     /**
