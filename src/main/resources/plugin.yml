@@ -1,0 +1,40 @@
+name: SimpleJail
+main: com.imjake9.simplejail3.SimpleJail
+description: A fast, simple jail plugin.
+version: 3.0.0
+author: imjake9
+depend: [Vault]
+
+commands:
+  jail:
+    description: Places a player in jail.
+    usage: /<command> <player> [XhYm]
+    permission: simplejail.jail
+  unjail:
+    description: Removes a player from jail.
+    usage: /<command> <player>
+    permission: simplejail.unjail
+  setjail:
+    description: Sets the jail point.
+    usage: |
+      /<command>
+      /<command> <x> <y> <z> [world]
+    permission: simplejail.setjail
+  setunjail:
+    description: Sets the jail point.
+    usage: |
+      /<command>
+      /<command> <x> <y> <z> [world]
+    permission: simplejail.setjail
+  jailtime:
+    description: Checks the remaining amount of jail time for a player.
+    usage: /<command> [player]
+    permission: simplejail.jailtime
+
+permissions:
+  simplejail.*:
+    children:
+      simplejail.jail: true
+      simplejail.unjail: true
+      simplejail.setjail: true
+      simplejail.jailtime: true

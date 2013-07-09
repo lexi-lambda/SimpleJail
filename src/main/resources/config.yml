@@ -1,0 +1,3 @@
+# a list of groups to be assigned to users placed in jail
+# separate with commas (e.g. [group1, group2, group3])
+jail-groups: [jailed]
