@@ -6,12 +6,14 @@ import com.imjake9.simplejail3.listeners.SimpleJailLoginListener;
 import com.imjake9.simplejail3.listeners.SimpleJailRespawnListener;
 import com.imjake9.simplejail3.utils.ConfigurationFile;
 import com.imjake9.simplejail3.utils.SerializableLocation;
+import java.io.IOException;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mcstats.Metrics;
 
 public class SimpleJail extends JavaPlugin {
     
@@ -80,6 +82,12 @@ public class SimpleJail extends JavaPlugin {
                 }
             }
         }, 600, 600);
+        
+        // start Metrics
+        try {
+            Metrics metrics = new Metrics(this);
+            metrics.start();
+        } catch (IOException ex) {}
     }
     
     @Override
